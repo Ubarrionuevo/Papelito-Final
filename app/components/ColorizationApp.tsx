@@ -95,7 +95,7 @@ export default function ColorizationApp() {
   }, [validateImage, maxFileSize]);
 
   // Poll for results with proper error handling and retry logic
-  const pollForResults = useCallback(async (pollingUrl: string, maxAttempts = 60): Promise<any> => {
+  const pollForResults = useCallback(async (pollingUrl: string, maxAttempts = 60): Promise<{ status: string; result?: { sample: string }; error?: string }> => {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
         const response = await fetch(pollingUrl, {
