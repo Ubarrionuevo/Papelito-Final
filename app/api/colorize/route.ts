@@ -2,24 +2,37 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { prompt, input_image, aspect_ratio, output_format, safety_tolerance } = body;
-
-    // Validate required fields
-    if (!prompt || !input_image) {
+    // Parse FormData instead of JSON
+    const formData = await request.formData();
+    const imageFile = formData.get('image') as File;
+    
+    if (!imageFile) {
       return NextResponse.json(
-        { error: 'Missing required fields: prompt and input_image' },
+        { error: 'No se proporcionó ninguna imagen' },
         { status: 400 }
       );
     }
 
+    // Validate file type
+    if (!imageFile.type.startsWith('image/')) {
+      return NextResponse.json(
+        { error: 'El archivo debe ser una imagen válida' },
+        { status: 400 }
+      );
+    }
+
+    // Convert image to base64
+    const bytes = await imageFile.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const base64Image = buffer.toString('base64');
+    const dataURI = `data:${imageFile.type};base64,${base64Image}`;
+
     // Prepare request to Flux Kontext API
     const fluxRequest = {
-      prompt,
-      input_image: input_image,
-      ...(aspect_ratio && { aspect_ratio }),
-      ...(output_format && { output_format }),
-      ...(safety_tolerance && { safety_tolerance })
+      prompt: "Colorize this black and white image with realistic and vibrant colors, maintaining the original style and details",
+      input_image: dataURI,
+      aspect_ratio: "1:1",
+      output_format: "png"
     };
 
     // Make request to Flux Kontext API
@@ -37,7 +50,7 @@ export async function POST(request: NextRequest) {
       const errorData = await response.text();
       console.error('Flux Kontext API error:', errorData);
       return NextResponse.json(
-        { error: 'Failed to process image with Flux Kontext API' },
+        { error: 'Error al procesar la imagen con la API de colorización' },
         { status: response.status }
       );
     }
@@ -53,7 +66,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Colorize API error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Error interno del servidor' },
       { status: 500 }
     );
   }

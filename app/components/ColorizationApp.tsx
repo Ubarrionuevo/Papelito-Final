@@ -1,130 +1,77 @@
-"use client";
+'use client';
 
-import { useState, useRef, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Upload, Image as ImageIcon, Download, RotateCcw, AlertCircle, CheckCircle, ArrowLeft } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
+import React, { useState, useCallback, useRef } from 'react';
+import Image from 'next/image';
 
 interface ColorizationResult {
-  id: string;
-  status: "pending" | "processing" | "ready" | "error";
-  inputImage: string;
-  outputImage?: string;
-  prompt: string;
-  error?: string;
+  original: string;
+  colorized: string;
+  timestamp: Date;
 }
 
 export default function ColorizationApp() {
-  const [isUploading, setIsUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [results, setResults] = useState<ColorizationResult[]>([]);
-  const [dragActive, setDragActive] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [prompt, setPrompt] = useState("Colorize this sketch naturally with vibrant colors");
 
-  // Convert image to base64
-  const convertToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
+  const maxFileSize = 10 * 1024 * 1024; // 10MB
+  const maxPixels = 4096 * 4096; // 4096x4096 pixels
 
-  // Validate file - CORREGIDO: ahora retorna Promise<boolean>
-  const validateFile = async (file: File): Promise<boolean> => {
-    const maxSize = 20 * 1024 * 1024; // 20MB
-    const maxPixels = 20 * 1000000; // 20MP
-    
-    if (file.size > maxSize) {
-      alert("File size must be less than 20MB");
-      return false;
-    }
-
+  const validateImage = useCallback((file: File): Promise<boolean> => {
     return new Promise((resolve) => {
-      const img = new Image();
+      const img = new window.Image();
       img.onload = () => {
         const pixels = img.width * img.height;
         if (pixels > maxPixels) {
-          alert("Image dimensions must be less than 20 megapixels");
+          setError(`La imagen es demasiado grande. Máximo ${maxPixels} píxeles.`);
           resolve(false);
         } else {
           resolve(true);
         }
       };
+      img.onerror = () => {
+        setError('Error al cargar la imagen. Asegúrate de que sea un archivo válido.');
+        resolve(false);
+      };
       img.src = URL.createObjectURL(file);
     });
-  };
+  }, []);
 
-  // Handle file upload - CORREGIDO: ahora usa useCallback
-  const handleFileUpload = useCallback(async (file: File) => {
-    if (!(await validateFile(file))) return;
+  const handleFileSelect = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-    setIsUploading(true);
-    try {
-      const base64Image = await convertToBase64(file);
-      const base64Data = base64Image.split(',')[1]; // Remove data:image/...;base64, prefix
-      
-      const newResult: ColorizationResult = {
-        id: Date.now().toString(),
-        status: "pending",
-        inputImage: base64Image,
-        prompt: prompt
-      };
+    setError(null);
 
-      setResults(prev => [newResult, ...prev]);
-      await processImage(newResult.id, base64Data);
-    } catch (error) {
-      console.error("Upload error:", error);
-      alert("Error uploading image");
-    } finally {
-      setIsUploading(false);
+    // Validar tipo de archivo
+    if (!file.type.startsWith('image/')) {
+      setError('Por favor selecciona un archivo de imagen válido.');
+      return;
     }
-  }, [prompt]);
 
-  // Process image with Flux Kontext API
-  const processImage = async (resultId: string, base64Data: string) => {
-    try {
-      const response = await fetch('/api/colorize', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: prompt,
-          input_image: base64Data,
-          aspect_ratio: "1:1",
-          output_format: "jpeg",
-          safety_tolerance: 2
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('API request failed');
-      }
-
-      const data = await response.json();
-      
-      // Start polling
-      pollForResult(resultId, data.polling_url);
-    } catch (error) {
-      console.error("Processing error:", error);
-      setResults(prev => prev.map(r => 
-        r.id === resultId 
-          ? { ...r, status: "error", error: "Failed to process image" }
-          : r
-      ));
+    // Validar tamaño
+    if (file.size > maxFileSize) {
+      setError('El archivo es demasiado grande. Máximo 10MB.');
+      return;
     }
-  };
 
-  // Poll for result
-  const pollForResult = async (resultId: string, pollingUrl: string) => {
-    setResults(prev => prev.map(r => 
-      r.id === resultId ? { ...r, status: "processing" } : r
-    ));
+    // Validar dimensiones
+    const isValid = await validateImage(file);
+    if (!isValid) return;
 
-    const poll = async () => {
+    setSelectedFile(file);
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+  }, [validateImage]);
+
+  const pollForResults = useCallback(async (pollingUrl: string) => {
+    let attempts = 0;
+    const maxAttempts = 60; // 5 minutes with 5 second intervals
+    
+    const poll = async (): Promise<void> => {
       try {
         const response = await fetch('/api/poll', {
           method: 'POST',
@@ -135,335 +82,242 @@ export default function ColorizationApp() {
         });
 
         if (!response.ok) {
-          throw new Error('Polling failed');
+          throw new Error('Error al verificar el estado');
         }
 
-        const data = await response.json();
+        const result = await response.json();
         
-        if (data.status === "Ready") {
-          setResults(prev => prev.map(r => 
-            r.id === resultId 
-              ? { ...r, status: "ready", outputImage: data.result.sample }
-              : r
-          ));
-        } else if (data.status === "Error" || data.status === "Failed") {
-          setResults(prev => prev.map(r => 
-            r.id === resultId 
-              ? { ...r, status: "error", error: data.error || "Processing failed" }
-              : r
-          ));
-        } else {
-          // Continue polling
-          setTimeout(poll, 500);
+        if (result.status === 'completed' && result.result) {
+          // Success! Add the result
+          const newResult: ColorizationResult = {
+            original: previewUrl!,
+            colorized: result.result,
+            timestamp: new Date(),
+          };
+
+          setResults(prev => [newResult, ...prev]);
+          setSelectedFile(null);
+          setPreviewUrl(null);
+          setIsProcessing(false);
+          
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+          return;
+        } else if (result.status === 'failed') {
+          throw new Error(result.error || 'Error en el procesamiento de la imagen');
+        } else if (result.status === 'processing') {
+          // Still processing, continue polling
+          attempts++;
+          if (attempts < maxAttempts) {
+            setTimeout(poll, 5000); // Wait 5 seconds before next poll
+          } else {
+            throw new Error('Tiempo de espera agotado. La imagen está tardando más de lo esperado.');
+          }
         }
       } catch (error) {
-        console.error("Polling error:", error);
-        setResults(prev => prev.map(r => 
-          r.id === resultId 
-            ? { ...r, status: "error", error: "Polling failed" }
-            : r
-        ));
+        setError(error instanceof Error ? error.message : 'Error al verificar el estado');
+        setIsProcessing(false);
       }
     };
 
+    // Start polling
     poll();
-  };
+  }, [previewUrl]);
 
-  // Handle drag and drop
-  const handleDrag = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
+  const processImage = useCallback(async () => {
+    if (!selectedFile) return;
+
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('image', selectedFile);
+
+      const response = await fetch('/api/colorize', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al procesar la imagen');
+      }
+
+      const result = await response.json();
+      
+      if (result.status === 'submitted') {
+        // Start polling for results
+        await pollForResults(result.polling_url);
+      } else {
+        throw new Error('Respuesta inesperada de la API');
+      }
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error desconocido');
+      setIsProcessing(false);
     }
+  }, [selectedFile, pollForResults]);
+
+  const handleDrop = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    const file = event.dataTransfer.files[0];
+    if (file) {
+      const input = fileInputRef.current;
+      if (input) {
+        input.files = event.dataTransfer.files;
+        handleFileSelect({ target: { files: event.dataTransfer.files } } as any);
+      }
+    }
+  }, [handleFileSelect]);
+
+  const handleDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileUpload(e.dataTransfer.files[0]);
-    }
-  }, [handleFileUpload]);
-
-  // Handle file input change
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      handleFileUpload(e.target.files[0]);
-    }
-  };
-
-  // Download result
-  const downloadResult = async (url: string, filename: string) => {
-    try {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(downloadUrl);
-    } catch (error) {
-      console.error("Download error:", error);
-      alert("Error downloading image");
-    }
-  };
-
-  // Retry processing
-  const retryProcessing = async (resultId: string) => {
-    const result = results.find(r => r.id === resultId);
-    if (result && result.inputImage) {
-      const base64Data = result.inputImage.split(',')[1];
-      await processImage(resultId, base64Data);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
-      <div className="max-w-6xl mx-auto">
-        {/* Back Navigation */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="mb-8"
-        >
-          <Link 
-            href="/"
-            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Back to Sketcha
-          </Link>
-        </motion.div>
-
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
-        >
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            AI Colorization Studio
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-800 mb-4">
+            Colorización de Imágenes con IA
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Transform your black and white sketches into vibrant, colorful masterpieces using advanced AI technology
+            Transforma tus dibujos en blanco y negro en obras de arte coloridas usando inteligencia artificial
           </p>
-        </motion.div>
+        </div>
 
-        {/* Upload Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white rounded-2xl shadow-xl p-8 mb-8"
-        >
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-              Upload Your Sketch
-            </h2>
-            <p className="text-gray-600">
-              Drag and drop your image or click to browse. Supports JPG, PNG up to 20MB.
-            </p>
-          </div>
-
-          {/* Prompt Input */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Colorization Instructions
-            </label>
-            <input
-              type="text"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Describe how you want the image to be colored..."
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-
-          {/* Upload Area */}
+        {/* Área de carga de archivos */}
+        <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
           <div
-            className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
-              dragActive 
-                ? 'border-blue-500 bg-blue-50' 
-                : 'border-gray-300 hover:border-gray-400'
+            className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${
+              previewUrl ? 'border-green-300 bg-green-50' : 'border-gray-300 hover:border-blue-400'
             }`}
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
             onDrop={handleDrop}
+            onDragOver={handleDragOver}
           >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileInput}
-              className="hidden"
-            />
-            
-            <div className="space-y-4">
-              <Upload className="mx-auto h-16 w-16 text-gray-400" />
+            {!previewUrl ? (
               <div>
-                <p className="text-lg font-medium text-gray-900">
-                  {isUploading ? 'Uploading...' : 'Drop your image here'}
+                <div className="text-6xl mb-4">🎨</div>
+                <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                  Arrastra tu imagen aquí o haz clic para seleccionar
+                </h3>
+                <p className="text-gray-500 mb-4">
+                  Formatos soportados: JPG, PNG, WEBP (máximo 10MB)
                 </p>
-                <p className="text-gray-600">
-                  or{' '}
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+                >
+                  Seleccionar Imagen
+                </button>
+              </div>
+            ) : (
+              <div>
+                <div className="relative inline-block">
+                  <Image
+                    src={previewUrl}
+                    alt="Vista previa"
+                    width={200}
+                    height={200}
+                    className="rounded-lg object-cover"
+                  />
                   <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="text-blue-600 hover:text-blue-500 font-medium"
+                    onClick={() => {
+                      setPreviewUrl(null);
+                      setSelectedFile(null);
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                      }
+                    }}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors"
                   >
-                    browse files
+                    ×
                   </button>
+                </div>
+                <p className="text-sm text-gray-600 mt-2">
+                  {selectedFile?.name}
                 </p>
               </div>
+            )}
+          </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+
+          {error && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600">{error}</p>
+            </div>
+          )}
+
+          {previewUrl && (
+            <div className="mt-6 text-center">
+              <button
+                onClick={processImage}
+                disabled={isProcessing}
+                className={`px-8 py-4 rounded-lg font-semibold text-lg transition-all ${
+                  isProcessing
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-red-600 hover:bg-red-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
+                }`}
+              >
+                {isProcessing ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    Procesando...
+                  </div>
+                ) : (
+                  '🎨 Colorizar Imagen'
+                )}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Resultados */}
+        {results.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
+              Resultados de Colorización
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {results.map((result, index) => (
+                <div key={index} className="bg-gray-50 rounded-lg p-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">Original</h4>
+                      <Image
+                        src={result.original}
+                        alt="Original"
+                        width={150}
+                        height={150}
+                        className="rounded-lg object-cover w-full"
+                      />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">Colorizada</h4>
+                      <Image
+                        src={result.colorized}
+                        alt="Colorizada"
+                        width={150}
+                        height={150}
+                        className="rounded-lg object-cover w-full"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2 text-center">
+                    {result.timestamp.toLocaleString()}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
-        </motion.div>
-
-        {/* Results Section */}
-        <AnimatePresence>
-          {results.map((result, index) => (
-            <motion.div
-              key={result.id}
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 50 }}
-              transition={{ delay: index * 0.1 }}
-              className="bg-white rounded-2xl shadow-xl p-6 mb-6"
-            >
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Input Image */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Original Sketch</h3>
-                  <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                    <Image
-                      src={result.inputImage}
-                      alt="Original sketch"
-                      fill
-                      className="object-contain"
-                    />
-                  </div>
-                </div>
-
-                {/* Output Image */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Colored Result</h3>
-                  <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                    {result.status === "pending" && (
-                      <div className="flex items-center justify-center h-full">
-                        <div className="text-center">
-                          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                          <p className="text-gray-500">Queued for processing...</p>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {result.status === "processing" && (
-                      <div className="flex items-center justify-center h-full">
-                        <div className="text-center">
-                          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                          <p className="text-gray-500">Processing with AI...</p>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {result.status === "ready" && result.outputImage && (
-                      <>
-                        <Image
-                          src={result.outputImage}
-                          alt="Colored result"
-                          fill
-                          className="object-contain"
-                        />
-                        <button
-                          onClick={() => downloadResult(result.outputImage!, `colored-${result.id}.jpg`)}
-                          className="absolute top-2 right-2 bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition-colors"
-                          title="Download result"
-                        >
-                          <Download className="h-4 w-4" />
-                        </button>
-                      </>
-                    )}
-                    
-                    {result.status === "error" && (
-                      <div className="flex items-center justify-center h-full">
-                        <div className="text-center text-red-600">
-                          <AlertCircle className="h-12 w-12 mx-auto mb-2" />
-                          <p className="font-medium">Processing failed</p>
-                          <p className="text-sm">{result.error}</p>
-                          <button
-                            onClick={() => retryProcessing(result.id)}
-                            className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
-                          >
-                            <RotateCcw className="h-4 w-4 inline mr-1" />
-                            Retry
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Status and Actions */}
-              <div className="mt-4 flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  {result.status === "pending" && (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                      <div className="w-2 h-2 bg-yellow-400 rounded-full mr-1 animate-pulse"></div>
-                      Queued
-                    </span>
-                  )}
-                  {result.status === "processing" && (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      <div className="w-2 h-2 bg-blue-400 rounded-full mr-1 animate-pulse"></div>
-                      Processing
-                    </span>
-                  )}
-                  {result.status === "ready" && (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      <CheckCircle className="w-3 w-3 mr-1" />
-                      Ready
-                    </span>
-                  )}
-                  {result.status === "error" && (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                      <AlertCircle className="w-3 w-3 mr-1" />
-                      Error
-                    </span>
-                  )}
-                </div>
-                
-                <div className="text-sm text-gray-500">
-                  Prompt: &ldquo;{result.prompt}&rdquo;
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-
-        {/* Empty State */}
-        {results.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-12"
-          >
-            <ImageIcon className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No images uploaded yet
-            </h3>
-            <p className="text-gray-500">
-              Upload your first sketch to see the magic happen!
-            </p>
-          </motion.div>
         )}
       </div>
     </div>
