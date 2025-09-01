@@ -62,11 +62,11 @@ export default function Header() {
             <a href="#contact" className="text-gray-700 hover:text-orange-500 transition-colors font-medium">
               Contact
             </a>
-            <button className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full font-medium transition-colors">
+            <a href="/colorize" className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full font-medium transition-colors">
               <User className="w-4 h-4" />
               Get Started
               <ChevronDown className="w-4 h-4" />
-            </button>
+            </a>
           </motion.nav>
 
           {/* Mobile menu button */}
@@ -112,11 +112,11 @@ export default function Header() {
               >
                 Contact
               </a>
-              <button className="w-full mt-4 flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full font-medium transition-colors">
+              <a href="/colorize" className="w-full mt-4 flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full font-medium transition-colors">
                 <User className="w-4 h-4" />
                 Get Started
                 <ChevronDown className="w-4 h-4" />
-              </button>
+              </a>
             </div>
           </motion.div>
         )}
