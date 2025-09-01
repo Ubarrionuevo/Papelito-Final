@@ -2,12 +2,12 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { AlertCircle, Lock, X } from 'lucide-react';
 
 interface ColorizationResult {
   original: string;
   colorized: string;
   timestamp: Date;
+  prompt: string;
 }
 
 export default function ColorizationApp() {
@@ -16,23 +16,13 @@ export default function ColorizationApp() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [results, setResults] = useState<ColorizationResult[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [showPricingModal, setShowPricingModal] = useState(false);
-  const [hasUsedFreeAttempt, setHasUsedFreeAttempt] = useState(false);
   const [prompt, setPrompt] = useState<string>('Apply realistic, natural colors to this sketch while maintaining the original style and details');
+  const [hasUsedFreeAttempt, setHasUsedFreeAttempt] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const maxFileSize = 10 * 1024 * 1024; // 10MB
-  const maxPixels = 4096 * 4096; // 4096x4096 pixels
-
-  // Convert file to base64 with data URL prefix
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = error => reject(error);
-    });
-  };
+  const maxFileSize = 20 * 1024 * 1024; // 20MB (API limit)
+  const maxPixels = 20 * 1024 * 1024; // 20 megapixels (API limit)
 
   // Check if user has already used their free attempt
   useEffect(() => {
@@ -42,20 +32,35 @@ export default function ColorizationApp() {
     }
   }, []);
 
+  // Convert file to base64 with proper error handling
+  const fileToBase64 = useCallback((file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove the data:image/...;base64, prefix to get just the base64 string
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+    });
+  }, []);
+
   const validateImage = useCallback((file: File): Promise<boolean> => {
     return new Promise((resolve) => {
       const img = new window.Image();
       img.onload = () => {
         const pixels = img.width * img.height;
         if (pixels > maxPixels) {
-          setError(`Image is too large. Maximum ${maxPixels} pixels.`);
+          setError(`Image is too large. Maximum ${maxPixels} pixels (${Math.sqrt(maxPixels)}x${Math.sqrt(maxPixels)}).`);
           resolve(false);
         } else {
           resolve(true);
         }
       };
       img.onerror = () => {
-        setError('Error loading image. Please ensure it is a valid file.');
+        setError('Error loading image. Please ensure it is a valid image file.');
         resolve(false);
       };
       img.src = URL.createObjectURL(file);
@@ -70,13 +75,13 @@ export default function ColorizationApp() {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      setError('Please select a valid image file.');
+      setError('Please select a valid image file (JPG, PNG, GIF).');
       return;
     }
 
     // Validate size
     if (file.size > maxFileSize) {
-      setError('File is too large. Maximum 10MB.');
+      setError(`File is too large. Maximum ${maxFileSize / (1024 * 1024)}MB.`);
       return;
     }
 
@@ -89,95 +94,124 @@ export default function ColorizationApp() {
     setPreviewUrl(url);
   }, [validateImage, maxFileSize]);
 
-  const pollForResults = useCallback(async (jobId: string, pollingUrl: string) => {
-    try {
-      // Poll directly using the polling_url from Flux Kontext API
-      const response = await fetch(pollingUrl, {
-        method: 'GET',
-        headers: {
-          'accept': 'application/json',
-          'x-key': process.env.NEXT_PUBLIC_BFL_API_KEY || '',
-        },
-      });
+  // Poll for results with proper error handling and retry logic
+  const pollForResults = useCallback(async (pollingUrl: string, maxAttempts = 60): Promise<any> => {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        const response = await fetch(pollingUrl, {
+          method: 'GET',
+          headers: {
+            'accept': 'application/json',
+            'x-key': process.env.NEXT_PUBLIC_BFL_API_KEY || '',
+          },
+        });
 
-      if (!response.ok) {
-        throw new Error('Failed to check status');
-      }
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
 
-      const data = await response.json();
-      
-      if (data.status === 'Ready') {
-        // Add result to the list
-        const newResult: ColorizationResult = {
-          original: previewUrl!,
-          colorized: data.result.sample,
-          timestamp: new Date(),
-        };
-        setResults(prev => [newResult, ...prev]);
+        const data = await response.json();
         
-        // Show pricing modal after successful colorization
-        setTimeout(() => {
-          setShowPricingModal(true);
-        }, 2000); // Show after 2 seconds
-      } else if (data.status === 'Processing') {
-        // Continue polling
-        setTimeout(() => pollForResults(jobId, pollingUrl), 2000);
-      } else if (data.status === 'Error' || data.status === 'Failed') {
-        throw new Error(data.error || 'Processing failed');
+        if (data.status === 'Ready') {
+          return data;
+        } else if (data.status === 'Processing') {
+          setProcessingStatus(`Processing... Attempt ${attempt + 1}/${maxAttempts}`);
+          // Wait 2 seconds before next attempt
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        } else if (data.status === 'Error' || data.status === 'Failed') {
+          throw new Error(data.error || 'Processing failed');
+        }
+      } catch (err) {
+        if (attempt === maxAttempts - 1) {
+          throw err;
+        }
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to get results');
     }
-  }, [previewUrl]);
+    
+    throw new Error('Processing timeout. Please try again.');
+  }, []);
 
   const processImage = useCallback(async () => {
     if (!selectedFile) return;
 
     // Check if user has already used their free attempt
     if (hasUsedFreeAttempt) {
-      setShowPricingModal(true);
+      setError('You have already used your free attempt. Please upgrade to continue.');
       return;
     }
 
     setIsProcessing(true);
     setError(null);
+    setProcessingStatus('Preparing image...');
 
     try {
-      // Convert file to base64 with data URL prefix
+      // Convert file to base64
       const imageBase64 = await fileToBase64(selectedFile);
       
+      // Prepare request for FLUX Kontext API
+      const requestBody = {
+        prompt: prompt,
+        input_image: imageBase64,
+        aspect_ratio: "1:1",
+        output_format: "jpeg"
+      };
+
+      setProcessingStatus('Sending to AI service...');
+
       const response = await fetch('/api/colorize', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          prompt: prompt,
-          image: imageBase64,
-          aspect_ratio: "1:1"
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to process image');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
       
-      // Mark free attempt as used
-      localStorage.setItem('sketcha_free_attempt_used', 'true');
-      setHasUsedFreeAttempt(true);
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to start processing');
+      }
+
+      setProcessingStatus('AI is processing your image...');
 
       // Poll for results
-      await pollForResults(data.data.id, data.data.polling_url);
+      const result = await pollForResults(data.data.polling_url);
+      
+      if (result.status === 'Ready' && result.result?.sample) {
+        // Add result to the list
+        const newResult: ColorizationResult = {
+          original: previewUrl!,
+          colorized: result.result.sample,
+          timestamp: new Date(),
+          prompt: prompt
+        };
+        setResults(prev => [newResult, ...prev]);
+
+        // Mark free attempt as used
+        localStorage.setItem('sketcha_free_attempt_used', 'true');
+        setHasUsedFreeAttempt(true);
+        
+        setProcessingStatus('Complete!');
+      } else {
+        throw new Error('No result received from AI service');
+      }
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
+      setError(`Colorization failed: ${errorMessage}`);
+      console.error('Colorization error:', err);
     } finally {
       setIsProcessing(false);
+      setProcessingStatus('');
     }
-  }, [selectedFile, hasUsedFreeAttempt, prompt, pollForResults]);
+  }, [selectedFile, previewUrl, prompt, hasUsedFreeAttempt, pollForResults, fileToBase64]);
 
   const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -202,7 +236,8 @@ export default function ColorizationApp() {
   const resetFreeAttempt = () => {
     localStorage.removeItem('sketcha_free_attempt_used');
     setHasUsedFreeAttempt(false);
-    setShowPricingModal(false);
+    setError(null);
+    setResults([]);
   };
 
   // Predefined prompts for colorization
@@ -239,29 +274,25 @@ export default function ColorizationApp() {
     }
   ];
 
-  // If user has used their free attempt, show pricing modal
-  if (hasUsedFreeAttempt && !showPricingModal) {
+  // If user has used their free attempt, show blocked message
+  if (hasUsedFreeAttempt && results.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
           <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Lock className="w-8 h-8 text-orange-600" />
+            <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Free Trial Complete!
+            Free Attempt Used!
           </h2>
           <p className="text-gray-600 mb-6">
-            You have used your free attempt. Upgrade to continue colorizing images!
+            You have used your free attempt. The colorization feature is now locked.
           </p>
           <button
-            onClick={() => setShowPricingModal(true)}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-full font-medium transition-colors"
-          >
-            View Pricing Plans
-          </button>
-          <button
             onClick={resetFreeAttempt}
-            className="w-full mt-3 text-gray-500 hover:text-gray-700 text-sm"
+            className="w-full bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-full font-medium transition-colors"
           >
             Reset (for testing)
           </button>
@@ -272,102 +303,6 @@ export default function ColorizationApp() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
-      {/* Pricing Modal */}
-      {showPricingModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  Choose Your Plan
-                </h2>
-                <button
-                  onClick={() => setShowPricingModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-            </div>
-            
-            <div className="p-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Starter Plan */}
-                <div className="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
-                  <div className="text-center">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Starter</h3>
-                    <div className="text-3xl font-bold text-gray-900 mb-1">$5</div>
-                    <div className="text-gray-500 mb-4">/month</div>
-                    <div className="text-lg font-medium text-gray-900 mb-4">1000 Credits</div>
-                  </div>
-                  <ul className="space-y-2 mb-6">
-                    <li className="flex items-center text-sm text-gray-600">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                      1000 colorizations
-                    </li>
-                    <li className="flex items-center text-sm text-gray-600">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                      High resolution output
-                    </li>
-                    <li className="flex items-center text-sm text-gray-600">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                      Commercial usage rights
-                    </li>
-                  </ul>
-                  <button className="w-full bg-gray-100 text-gray-700 py-2 rounded-lg font-medium">
-                    Coming Soon
-                  </button>
-                </div>
-
-                {/* Professional Plan */}
-                <div className="border-2 border-orange-500 rounded-xl p-6 hover:shadow-lg transition-shadow relative">
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                      Best Value
-                    </span>
-                  </div>
-                  <div className="text-center">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Professional</h3>
-                    <div className="text-3xl font-bold text-gray-900 mb-1">$10</div>
-                    <div className="text-gray-500 mb-4">one-time</div>
-                    <div className="text-lg font-medium text-gray-900 mb-4">3000 Credits</div>
-                  </div>
-                  <ul className="space-y-2 mb-6">
-                    <li className="flex items-center text-sm text-gray-600">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                      3000 colorizations
-                    </li>
-                    <li className="flex items-center text-sm text-gray-600">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                      High resolution output
-                    </li>
-                    <li className="flex items-center text-sm text-gray-600">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                      Commercial usage rights
-                    </li>
-                  </ul>
-                  <button className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-lg font-medium transition-colors">
-                    Coming Soon
-                  </button>
-                </div>
-              </div>
-              
-              <div className="mt-6 text-center">
-                <p className="text-sm text-gray-500">
-                  Payment integration coming soon! For now, you can continue testing with the reset button.
-                </p>
-                <button
-                  onClick={resetFreeAttempt}
-                  className="mt-4 text-orange-500 hover:text-orange-600 text-sm font-medium"
-                >
-                  Reset Free Attempt (for testing)
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -381,7 +316,9 @@ export default function ColorizationApp() {
           {!hasUsedFreeAttempt && (
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
               <div className="flex items-center justify-center gap-2 text-orange-800">
-                <AlertCircle className="w-5 h-5" />
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
                 <span className="font-medium">1 Free Attempt Included!</span>
               </div>
               <p className="text-orange-700 text-sm mt-1">
@@ -412,7 +349,7 @@ export default function ColorizationApp() {
                   Drop your image here or click to browse
                 </p>
                 <p className="text-gray-500 mb-4">
-                  Supports JPG, PNG, GIF up to 10MB
+                  Supports JPG, PNG, GIF up to 20MB
                 </p>
                 <button
                   onClick={() => fileInputRef.current?.click()}
@@ -494,11 +431,21 @@ export default function ColorizationApp() {
                 
                 <button
                   onClick={processImage}
-                  disabled={isProcessing}
+                  disabled={isProcessing || hasUsedFreeAttempt}
                   className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 text-white px-8 py-3 rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
                 >
-                  {isProcessing ? 'Processing...' : 'Colorize Image'}
+                  {isProcessing ? 'Processing...' : hasUsedFreeAttempt ? 'Free Attempt Used' : 'Colorize Image'}
                 </button>
+
+                {/* Processing Status */}
+                {isProcessing && processingStatus && (
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-blue-800">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                      <span className="text-sm font-medium">{processingStatus}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -507,7 +454,9 @@ export default function ColorizationApp() {
           {error && (
             <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
               <div className="flex items-center gap-2 text-red-800">
-                <AlertCircle className="w-5 h-5" />
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
                 <span className="font-medium">Error:</span>
                 <span>{error}</span>
               </div>
@@ -521,6 +470,11 @@ export default function ColorizationApp() {
               <div className="grid gap-6">
                 {results.map((result, index) => (
                   <div key={index} className="bg-gray-50 rounded-lg p-6">
+                    <div className="mb-4">
+                      <p className="text-sm text-gray-600 mb-2">
+                        <span className="font-medium">Prompt used:</span> {result.prompt}
+                      </p>
+                    </div>
                     <div className="grid md:grid-cols-2 gap-6">
                       <div>
                         <h4 className="font-medium text-gray-900 mb-2">Original</h4>
