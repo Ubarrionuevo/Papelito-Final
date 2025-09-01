@@ -1,22 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthService } from '../../../../lib/auth';
-import { plans } from '../../../../lib/config';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.text();
-    const signature = request.headers.get('stripe-signature');
-
-    if (!signature) {
-      return NextResponse.json({ error: 'No signature provided' }, { status: 400 });
-    }
-
-    // In a real implementation, you would:
-    // 1. Verify the webhook signature using Stripe
-    // 2. Parse the event
-    // 3. Handle different event types
-
-    // For now, we'll handle a mock successful payment
+    // Mock webhook for simulation
+    // In real implementation, this would handle Stripe webhooks
+    
     const mockEvent = {
       type: 'payment_intent.succeeded',
       data: {
@@ -30,22 +19,28 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    // Handle successful payment
+    // Simulate adding credits for testing
     if (mockEvent.type === 'payment_intent.succeeded') {
       const { userId, planId } = mockEvent.data.object.metadata;
-      const plan = plans.find(p => p.id === planId);
-
-      if (plan && userId) {
-        // Add credits to user
-        const success = AuthService.addCredits(userId, plan.credits, `Plan: ${plan.name}`);
-        
+      
+      // Add credits based on plan (simulation)
+      let creditsToAdd = 1000; // Default
+      if (planId === 'professional') {
+        creditsToAdd = 3000;
+      }
+      
+      if (userId && userId !== 'user_mock') {
+        const success = AuthService.addCredits(userId, creditsToAdd);
         if (success) {
-          console.log(`Added ${plan.credits} credits to user ${userId}`);
+          console.log(`Simulation: Added ${creditsToAdd} credits to user ${userId}`);
         }
       }
     }
 
-    return NextResponse.json({ received: true }, { status: 200 });
+    return NextResponse.json({ 
+      received: true, 
+      message: 'Webhook processed (simulation mode)' 
+    }, { status: 200 });
 
   } catch (error) {
     console.error('Webhook error:', error);

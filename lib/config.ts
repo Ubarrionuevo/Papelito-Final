@@ -1,6 +1,5 @@
-import { AppConfig } from './types';
-
-export const appConfig: AppConfig = {
+// Simple configuration for simulation mode
+export const appConfig = {
   freeTrialCredits: 1, // Solo 1 intento gratuito por usuario nuevo
   maxImageSize: 10 * 1024 * 1024, // 10MB
   maxImagePixels: 4096 * 4096, // 4096x4096 pixels
@@ -52,8 +51,3 @@ export const plans = [
     }
   }
 ];
-
-export const stripeConfig = {
-  publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
-  webhookSecret: process.env.STRIPE_WEBHOOK_SECRET!,
-};

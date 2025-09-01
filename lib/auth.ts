@@ -1,12 +1,10 @@
-import { User, CreditTransaction } from './types';
+import { User } from './types';
 
-// Simple in-memory storage for demo purposes
-// In production, this would be replaced with a real database
+// Simple in-memory storage for simulation - no real database needed
 const users = new Map<string, User>();
-const creditTransactions = new Map<string, CreditTransaction[]>();
 
 export class AuthService {
-  // Create a new user with free trial credits
+  // Create a new user with 1 free credit
   static createUser(email: string, name?: string): User {
     const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
@@ -14,17 +12,12 @@ export class AuthService {
       id: userId,
       email,
       name,
-      credits: 1, // Solo 1 crédito gratuito
+      credits: 1, // Solo 1 crédito gratuito para pruebas
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
     users.set(userId, user);
-    creditTransactions.set(userId, []);
-
-    // Add initial credit transaction
-    this.addCreditTransaction(userId, 'bonus', 1, 1, 'Free trial credit');
-
     return user;
   }
 
@@ -59,15 +52,11 @@ export class AuthService {
     user.credits -= amount;
     user.updatedAt = new Date();
     users.set(userId, user);
-
-    // Add usage transaction
-    this.addCreditTransaction(userId, 'usage', -amount, user.credits, 'Image colorization');
-
     return true;
   }
 
-  // Add credits to user (for purchases)
-  static addCredits(userId: string, amount: number, source: string = 'purchase'): boolean {
+  // Add credits to user (for simulation)
+  static addCredits(userId: string, amount: number): boolean {
     const user = this.getUser(userId);
     if (!user) {
       return false;
@@ -76,51 +65,12 @@ export class AuthService {
     user.credits += amount;
     user.updatedAt = new Date();
     users.set(userId, user);
-
-    // Add purchase transaction
-    this.addCreditTransaction(userId, 'purchase', amount, user.credits, source);
-
     return true;
-  }
-
-  // Get user's credit transactions
-  static getCreditTransactions(userId: string): CreditTransaction[] {
-    return creditTransactions.get(userId) || [];
-  }
-
-  // Add credit transaction
-  private static addCreditTransaction(
-    userId: string, 
-    type: CreditTransaction['type'], 
-    amount: number, 
-    balance: number, 
-    description: string
-  ): void {
-    const transaction: CreditTransaction = {
-      id: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      userId,
-      type,
-      amount,
-      balance,
-      description,
-      createdAt: new Date(),
-    };
-
-    const userTransactions = creditTransactions.get(userId) || [];
-    userTransactions.push(transaction);
-    creditTransactions.set(userId, userTransactions);
   }
 
   // Get user's current credit balance
   static getCreditBalance(userId: string): number {
     const user = this.getUser(userId);
     return user ? user.credits : 0;
-  }
-
-  // Check if user is new (has only free trial credits)
-  static isNewUser(userId: string): boolean {
-    const transactions = this.getCreditTransactions(userId);
-    const purchaseTransactions = transactions.filter(tx => tx.type === 'purchase');
-    return purchaseTransactions.length === 0;
   }
 }
