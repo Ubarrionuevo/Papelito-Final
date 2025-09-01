@@ -38,7 +38,7 @@ export default function ColorizationApp() {
       };
       img.src = URL.createObjectURL(file);
     });
-  }, []);
+  }, [maxPixels]);
 
   const handleFileSelect = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -65,7 +65,7 @@ export default function ColorizationApp() {
     setSelectedFile(file);
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
-  }, [validateImage]);
+  }, [validateImage, maxFileSize]);
 
   const pollForResults = useCallback(async (pollingUrl: string) => {
     let attempts = 0;
@@ -166,7 +166,11 @@ export default function ColorizationApp() {
       const input = fileInputRef.current;
       if (input) {
         input.files = event.dataTransfer.files;
-        handleFileSelect({ target: { files: event.dataTransfer.files } } as any);
+        // Create a proper event object instead of using 'any'
+        const syntheticEvent = {
+          target: { files: event.dataTransfer.files }
+        } as React.ChangeEvent<HTMLInputElement>;
+        handleFileSelect(syntheticEvent);
       }
     }
   }, [handleFileSelect]);
