@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AuthService } from '../../../lib/auth';
-import { ApiResponse, User } from '../../../lib/types';
+import { AuthService } from '../../lib/auth';
+import { ApiResponse, User } from '../../lib/types';
 
 export async function POST(request: NextRequest) {
   try {
