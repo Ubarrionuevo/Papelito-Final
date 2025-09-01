@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AuthService } from '../../../../../lib/auth';
-import { ApiResponse, CreditCheckResponse } from '../../../../../lib/types';
+import { AuthService } from '../../../../lib/auth';
+import { ApiResponse, CreditCheckResponse } from '../../../../lib/types';
 
 export async function POST(request: NextRequest) {
   try {
