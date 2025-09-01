@@ -21,40 +21,6 @@ export default function ColorizationApp() {
   const [prompt, setPrompt] = useState<string>('Apply realistic, natural colors to this sketch while maintaining the original style and details');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Predefined prompts for colorization
-  const predefinedPrompts = [
-    {
-      name: "Natural Colors",
-      prompt: "Apply realistic, natural colors to this sketch while maintaining the original style and details",
-      description: "Realistic and natural color palette"
-    },
-    {
-      name: "Warm Theme",
-      prompt: "Use warm, golden color palette with orange, yellow, and warm brown tones",
-      description: "Sunset and warm atmosphere"
-    },
-    {
-      name: "Cool Theme",
-      prompt: "Apply cool, blue-based colors with greens, purples, and cool grays",
-      description: "Cool and calm atmosphere"
-    },
-    {
-      name: "Vibrant Style",
-      prompt: "Use bright, saturated colors with high contrast and vivid tones",
-      description: "Bright and energetic colors"
-    },
-    {
-      name: "Moody Atmosphere",
-      prompt: "Apply dark, atmospheric colors with deep shadows and moody tones",
-      description: "Dark and dramatic mood"
-    },
-    {
-      name: "Anime Style",
-      prompt: "Colorize with vibrant anime-style colors, bright and cheerful palette",
-      description: "Bright anime character colors"
-    }
-  ];
-
   const maxFileSize = 10 * 1024 * 1024; // 10MB
   const maxPixels = 4096 * 4096; // 4096x4096 pixels
 
@@ -89,7 +55,7 @@ export default function ColorizationApp() {
         }
       };
       img.onerror = () => {
-        setError('Error loading image. Please ensure it\'s a valid file.');
+        setError('Error loading image. Please ensure it is a valid file.');
         resolve(false);
       };
       img.src = URL.createObjectURL(file);
@@ -122,6 +88,47 @@ export default function ColorizationApp() {
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
   }, [validateImage, maxFileSize]);
+
+  const pollForResults = useCallback(async (jobId: string, pollingUrl: string) => {
+    try {
+      // Poll directly using the polling_url from Flux Kontext API
+      const response = await fetch(pollingUrl, {
+        method: 'GET',
+        headers: {
+          'accept': 'application/json',
+          'x-key': process.env.NEXT_PUBLIC_BFL_API_KEY || '',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to check status');
+      }
+
+      const data = await response.json();
+      
+      if (data.status === 'Ready') {
+        // Add result to the list
+        const newResult: ColorizationResult = {
+          original: previewUrl!,
+          colorized: data.result.sample,
+          timestamp: new Date(),
+        };
+        setResults(prev => [newResult, ...prev]);
+        
+        // Show pricing modal after successful colorization
+        setTimeout(() => {
+          setShowPricingModal(true);
+        }, 2000); // Show after 2 seconds
+      } else if (data.status === 'Processing') {
+        // Continue polling
+        setTimeout(() => pollForResults(jobId, pollingUrl), 2000);
+      } else if (data.status === 'Error' || data.status === 'Failed') {
+        throw new Error(data.error || 'Processing failed');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to get results');
+    }
+  }, [previewUrl]);
 
   const processImage = useCallback(async () => {
     if (!selectedFile) return;
@@ -172,47 +179,6 @@ export default function ColorizationApp() {
     }
   }, [selectedFile, hasUsedFreeAttempt, prompt, pollForResults]);
 
-  const pollForResults = async (jobId: string, pollingUrl: string) => {
-    try {
-      // Poll directly using the polling_url from Flux Kontext API
-      const response = await fetch(pollingUrl, {
-        method: 'GET',
-        headers: {
-          'accept': 'application/json',
-          'x-key': process.env.NEXT_PUBLIC_BFL_API_KEY || '',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to check status');
-      }
-
-      const data = await response.json();
-      
-      if (data.status === 'Ready') {
-        // Add result to the list
-        const newResult: ColorizationResult = {
-          original: previewUrl!,
-          colorized: data.result.sample,
-          timestamp: new Date(),
-        };
-        setResults(prev => [newResult, ...prev]);
-        
-        // Show pricing modal after successful colorization
-        setTimeout(() => {
-          setShowPricingModal(true);
-        }, 2000); // Show after 2 seconds
-      } else if (data.status === 'Processing') {
-        // Continue polling
-        setTimeout(() => pollForResults(jobId, pollingUrl), 2000);
-      } else if (data.status === 'Error' || data.status === 'Failed') {
-        throw new Error(data.error || 'Processing failed');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to get results');
-    }
-  };
-
   const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     const files = event.dataTransfer.files;
@@ -239,6 +205,40 @@ export default function ColorizationApp() {
     setShowPricingModal(false);
   };
 
+  // Predefined prompts for colorization
+  const predefinedPrompts = [
+    {
+      name: "Natural Colors",
+      prompt: "Apply realistic, natural colors to this sketch while maintaining the original style and details",
+      description: "Realistic and natural color palette"
+    },
+    {
+      name: "Warm Theme",
+      prompt: "Use warm, golden color palette with orange, yellow, and warm brown tones",
+      description: "Sunset and warm atmosphere"
+    },
+    {
+      name: "Cool Theme",
+      prompt: "Apply cool, blue-based colors with greens, purples, and cool grays",
+      description: "Cool and calm atmosphere"
+    },
+    {
+      name: "Vibrant Style",
+      prompt: "Use bright, saturated colors with high contrast and vivid tones",
+      description: "Bright and energetic colors"
+    },
+    {
+      name: "Moody Atmosphere",
+      prompt: "Apply dark, atmospheric colors with deep shadows and moody tones",
+      description: "Dark and dramatic mood"
+    },
+    {
+      name: "Anime Style",
+      prompt: "Colorize with vibrant anime-style colors, bright and cheerful palette",
+      description: "Bright anime character colors"
+    }
+  ];
+
   // If user has used their free attempt, show pricing modal
   if (hasUsedFreeAttempt && !showPricingModal) {
     return (
@@ -251,7 +251,7 @@ export default function ColorizationApp() {
             Free Trial Complete!
           </h2>
           <p className="text-gray-600 mb-6">
-            You&apos;ve used your free attempt. Upgrade to continue colorizing images!
+            You have used your free attempt. Upgrade to continue colorizing images!
           </p>
           <button
             onClick={() => setShowPricingModal(true)}
@@ -449,60 +449,56 @@ export default function ColorizationApp() {
                     ×
                   </button>
                 </div>
-                                 <p className="text-green-600 font-medium mb-4">
-                   Image selected successfully!
-                 </p>
-                 
-                 {/* Prompt Input */}
-                 <div className="mb-4 text-left">
-                   <label className="block text-sm font-bold text-gray-900 mb-2">
-                     How would you like to colorize this image?
-                   </label>
-                   
-                   {/* Predefined Prompts */}
-                   <div className="mb-3">
-                     <p className="text-xs text-gray-600 mb-2 font-medium">Quick options:</p>
-                     <div className="grid grid-cols-2 gap-2">
-                       {predefinedPrompts.map((option, index) => (
-                         <button
-                           key={index}
-                           onClick={() => setPrompt(option.prompt)}
-                           className={`text-xs px-3 py-2 rounded-lg border transition-colors ${
-                             prompt === option.prompt
-                               ? 'bg-orange-500 text-white border-orange-500'
-                               : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
-                           }`}
-                           title={option.description}
-                         >
-                           {option.name}
-                         </button>
-                       ))}
-                     </div>
-                   </div>
-                   
-                   <textarea
-                     value={prompt}
-                     onChange={(e) => setPrompt(e.target.value)}
-                     placeholder="Or write your own custom instructions..."
-                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none text-gray-900 placeholder-gray-500 bg-white"
-                     rows={3}
-                     style={{
-                       color: '#111827',
-                       '::placeholder': { color: '#6B7280' }
-                     }}
-                   />
-                                   <p className="text-xs text-gray-600 mt-1 font-medium">
-                  Examples: &quot;Apply red and gold colors&quot;, &quot;Use pastel palette&quot;, &quot;Colorize with sunset orange and purple&quot;
+                <p className="text-green-600 font-medium mb-4">
+                  Image selected successfully!
                 </p>
-                 </div>
-                 
-                 <button
-                   onClick={processImage}
-                   disabled={isProcessing}
-                   className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 text-white px-8 py-3 rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
-                 >
-                   {isProcessing ? 'Processing...' : 'Colorize Image'}
-                 </button>
+                
+                {/* Prompt Input */}
+                <div className="mb-4 text-left">
+                  <label className="block text-sm font-bold text-gray-900 mb-2">
+                    How would you like to colorize this image?
+                  </label>
+                  
+                  {/* Predefined Prompts */}
+                  <div className="mb-3">
+                    <p className="text-xs text-gray-600 mb-2 font-medium">Quick options:</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {predefinedPrompts.map((option, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setPrompt(option.prompt)}
+                          className={`text-xs px-3 py-2 rounded-lg border transition-colors ${
+                            prompt === option.prompt
+                              ? 'bg-orange-500 text-white border-orange-500'
+                              : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                          }`}
+                          title={option.description}
+                        >
+                          {option.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="Or write your own custom instructions..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none text-gray-900 placeholder-gray-500 bg-white"
+                    rows={3}
+                  />
+                  <p className="text-xs text-gray-600 mt-1 font-medium">
+                    Examples: &quot;Apply red and gold colors&quot;, &quot;Use pastel palette&quot;, &quot;Colorize with sunset orange and purple&quot;
+                  </p>
+                </div>
+                
+                <button
+                  onClick={processImage}
+                  disabled={isProcessing}
+                  className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 text-white px-8 py-3 rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
+                >
+                  {isProcessing ? 'Processing...' : 'Colorize Image'}
+                </button>
               </div>
             )}
           </div>
