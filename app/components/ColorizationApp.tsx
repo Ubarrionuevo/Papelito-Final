@@ -17,7 +17,6 @@ interface ColorizationResult {
 
 export default function ColorizationApp() {
   const [isUploading, setIsUploading] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [results, setResults] = useState<ColorizationResult[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -86,8 +85,6 @@ export default function ColorizationApp() {
 
   // Process image with Flux Kontext API
   const processImage = async (resultId: string, base64Data: string) => {
-    setIsProcessing(true);
-    
     try {
       const response = await fetch('/api/colorize', {
         method: 'POST',
@@ -118,8 +115,6 @@ export default function ColorizationApp() {
           ? { ...r, status: "error", error: "Failed to process image" }
           : r
       ));
-    } finally {
-      setIsProcessing(false);
     }
   };
 
@@ -193,7 +188,7 @@ export default function ColorizationApp() {
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFileUpload(e.dataTransfer.files[0]);
     }
-  }, []);
+  }, [handleFileUpload]);
 
   // Handle file input change
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -434,20 +429,20 @@ export default function ColorizationApp() {
                   )}
                   {result.status === "ready" && (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      <CheckCircle className="w-3 h-3 mr-1" />
+                      <CheckCircle className="w-3 w-3 mr-1" />
                       Ready
                     </span>
                   )}
                   {result.status === "error" && (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                      <AlertCircle className="w-3 h-3 mr-1" />
+                      <AlertCircle className="w-3 w-3 mr-1" />
                       Error
                     </span>
                   )}
                 </div>
                 
                 <div className="text-sm text-gray-500">
-                  Prompt: "{result.prompt}"
+                  Prompt: &ldquo;{result.prompt}&rdquo;
                 </div>
               </div>
             </motion.div>
