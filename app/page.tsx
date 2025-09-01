@@ -39,9 +39,9 @@ export default function Home() {
       title: "Professional",
       price: "$10",
       period: " one-time",
-      credits: "2000 Credits",
+      credits: "3000 Credits",
       features: [
-        "2000 colorizations",
+        "3000 colorizations",
         "High resolution output",
         "Multiple export formats",
         "Professional AI models",
