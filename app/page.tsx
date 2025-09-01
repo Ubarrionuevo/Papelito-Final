@@ -97,11 +97,11 @@ export default function Home() {
               </div>
 
               <div className="text-center lg:text-left">
-                <button className="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-8 py-3 rounded-full font-medium transition-colors mb-2">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Coming Soon
-                </button>
-                <p className="text-sm text-gray-500">Payment methods being configured! Stay tuned!</p>
+                <a href="/colorize" className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-full font-medium transition-colors shadow-sm hover:shadow-md mb-2">
+                  <ArrowRight className="w-5 h-5" />
+                  Get Started - Try Free
+                </a>
+                <p className="text-sm text-gray-500">1 free attempt included! No registration needed.</p>
               </div>
             </motion.div>
 
@@ -143,13 +143,12 @@ export default function Home() {
                 Join thousands of designers who are already using Sketcha to bring their sketches to life with AI-powered colorization.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <button className="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-8 py-3 rounded-full font-medium transition-colors">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Coming Soon
-                </button>
-                <button className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-full font-medium transition-colors shadow-sm hover:shadow-md">
-                  Learn More
+                <a href="/colorize" className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-full font-medium transition-colors shadow-sm hover:shadow-md">
+                  Get Started - Try Free
                   <ArrowRight className="w-5 h-5" />
+                </a>
+                <button className="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-8 py-3 rounded-full font-medium transition-colors">
+                  Learn More
                 </button>
               </div>
             </div>
