@@ -12,7 +12,7 @@ export default function SmoothScroll() {
         e.preventDefault();
         const href = anchor.getAttribute('href');
         if (href) {
-          const targetElement = document.querySelector(href);
+          const targetElement = document.querySelector(href) as HTMLElement;
           if (targetElement) {
             const headerHeight = 64; // altura del header fijo
             const targetPosition = targetElement.offsetTop - headerHeight;

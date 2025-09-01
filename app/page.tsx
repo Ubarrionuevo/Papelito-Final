@@ -2,7 +2,6 @@
 
 import { motion } from "framer-motion";
 import { 
-  Pencil, 
   Check, 
   Star, 
   Loader2, 
