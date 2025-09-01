@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { AlertCircle, Lock, CreditCard, X } from 'lucide-react';
+import { AlertCircle, Lock, X } from 'lucide-react';
 
 interface ColorizationResult {
   original: string;
@@ -170,7 +170,7 @@ export default function ColorizationApp() {
     } finally {
       setIsProcessing(false);
     }
-  }, [selectedFile, hasUsedFreeAttempt]);
+  }, [selectedFile, hasUsedFreeAttempt, prompt, pollForResults]);
 
   const pollForResults = async (jobId: string, pollingUrl: string) => {
     try {
@@ -251,7 +251,7 @@ export default function ColorizationApp() {
             Free Trial Complete!
           </h2>
           <p className="text-gray-600 mb-6">
-            You've used your free attempt. Upgrade to continue colorizing images!
+            You&apos;ve used your free attempt. Upgrade to continue colorizing images!
           </p>
           <button
             onClick={() => setShowPricingModal(true)}
@@ -491,9 +491,9 @@ export default function ColorizationApp() {
                        '::placeholder': { color: '#6B7280' }
                      }}
                    />
-                   <p className="text-xs text-gray-600 mt-1 font-medium">
-                     Examples: "Apply red and gold colors", "Use pastel palette", "Colorize with sunset orange and purple"
-                   </p>
+                                   <p className="text-xs text-gray-600 mt-1 font-medium">
+                  Examples: &quot;Apply red and gold colors&quot;, &quot;Use pastel palette&quot;, &quot;Colorize with sunset orange and purple&quot;
+                </p>
                  </div>
                  
                  <button

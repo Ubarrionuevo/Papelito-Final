@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { 
   Check, 
   Star, 
-  Loader2, 
   ArrowRight, 
   Send
 } from "lucide-react";
