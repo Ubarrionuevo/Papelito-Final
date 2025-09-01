@@ -32,8 +32,8 @@ export default function ColorizationApp() {
     });
   };
 
-  // Validate file
-  const validateFile = (file: File): boolean => {
+  // Validate file - CORREGIDO: ahora retorna Promise<boolean>
+  const validateFile = async (file: File): Promise<boolean> => {
     const maxSize = 20 * 1024 * 1024; // 20MB
     const maxPixels = 20 * 1000000; // 20MP
     
@@ -57,9 +57,9 @@ export default function ColorizationApp() {
     });
   };
 
-  // Handle file upload
-  const handleFileUpload = async (file: File) => {
-    if (!validateFile(file)) return;
+  // Handle file upload - CORREGIDO: ahora usa useCallback
+  const handleFileUpload = useCallback(async (file: File) => {
+    if (!(await validateFile(file))) return;
 
     setIsUploading(true);
     try {
@@ -81,7 +81,7 @@ export default function ColorizationApp() {
     } finally {
       setIsUploading(false);
     }
-  };
+  }, [prompt]);
 
   // Process image with Flux Kontext API
   const processImage = async (resultId: string, base64Data: string) => {
