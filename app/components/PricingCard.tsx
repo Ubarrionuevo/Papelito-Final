@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Check, Star, Crown } from "lucide-react";
+import { Check, Star, Crown, ArrowRight } from "lucide-react";
 
 interface PricingCardProps {
   title: string;
@@ -47,7 +47,7 @@ export default function PricingCard({
           transition={{ delay: 0.3, type: "spring" }}
           className="absolute -top-3 left-1/2 transform -translate-x-1/2"
         >
-          <span className="bg-orange-500 text-white px-4 py-1 rounded-full text-sm font-medium shadow-lg">
+          <span className="bg-orange-500 text-black px-4 py-1 rounded-full text-sm font-medium shadow-lg">
             Most Popular
           </span>
         </motion.div>
@@ -55,12 +55,12 @@ export default function PricingCard({
 
       {/* Header */}
       <div className="text-center mb-8">
-        <h3 className="text-2xl font-bold text-gray-900 mb-2">{title}</h3>
+        <h3 className="text-2xl font-bold text-black mb-2">{title}</h3>
         <div className="flex items-baseline justify-center gap-1 mb-2">
-          <span className="text-4xl font-bold text-gray-900">{price}</span>
-          <span className="text-gray-600">{period}</span>
+          <span className="text-4xl font-bold text-black">{price}</span>
+          <span className="text-black">{period}</span>
         </div>
-        <div className="text-2xl font-semibold text-gray-900 mb-4">{credits}</div>
+        <div className="text-2xl font-semibold text-black mb-4">{credits}</div>
         
         {/* Badge */}
         {badge && (
@@ -84,31 +84,61 @@ export default function PricingCard({
             <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
               <Check className="w-3 h-3 text-green-600" />
             </div>
-            <span className="text-gray-700">{feature}</span>
+            <span className="text-black">{feature}</span>
           </motion.li>
         ))}
       </ul>
 
       {/* CTA Button */}
-      <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        className={`w-full py-3 rounded-full font-medium transition-all duration-200 ${
-          popular
-            ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-lg hover:shadow-xl'
-            : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-        }`}
-      >
-        <div className="flex items-center justify-center gap-2">
-          <div className="w-5 h-5 animate-spin">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
+      {title === "Starter" ? (
+        <motion.a
+          href="https://buy.polar.sh/polar_cl_j9AjecF4Y3cJGkt8IMTonXo7LOieC7cVkK16K1ZHqDC"
+          target="_blank"
+          rel="noopener noreferrer"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="w-full py-3 rounded-full font-bold transition-all duration-200 bg-orange-500 hover:bg-orange-600 text-white shadow-lg hover:shadow-xl"
+        >
+          <div className="flex items-center justify-center gap-2">
+            <ArrowRight className="w-5 h-5" />
+            <span className="text-black">Get Started</span>
           </div>
-          Coming Soon
-        </div>
-      </motion.button>
+        </motion.a>
+      ) : title === "Professional" ? (
+        <motion.a
+          href="https://buy.polar.sh/polar_cl_Ljqx9geGWiNbEflEh8QKscv341ZqXf7LlEM3o69AF"
+          target="_blank"
+          rel="noopener noreferrer"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="w-full py-3 rounded-full font-bold transition-all duration-200 bg-blue-500 hover:bg-blue-600 text-white shadow-lg hover:shadow-xl"
+        >
+          <div className="flex items-center justify-center gap-2">
+            <ArrowRight className="w-5 h-5" />
+            <span className="text-black">Get Started</span>
+          </div>
+        </motion.a>
+      ) : (
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className={`w-full py-3 rounded-full font-medium transition-all duration-200 ${
+            popular
+              ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-lg hover:shadow-xl'
+              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+          }`}
+        >
+          <div className="flex items-center justify-center gap-2">
+            <div className="w-5 h-5 animate-spin">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+            </div>
+            Coming Soon
+          </div>
+        </motion.button>
+      )}
 
       {/* Decorative elements */}
       <div className="absolute top-4 right-4 opacity-10">
