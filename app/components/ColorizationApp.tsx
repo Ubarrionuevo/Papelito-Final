@@ -15,6 +15,8 @@ export default function ColorizationApp() {
   const [prompt, setPrompt] = useState<string>('Apply realistic, natural colors to this sketch while maintaining the original style and details');
   const [hasUsedFreeAttempt, setHasUsedFreeAttempt] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<string>('');
+  const [showResultModal, setShowResultModal] = useState(false);
+  const [currentResult, setCurrentResult] = useState<ColorizationResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const maxFileSize = 20 * 1024 * 1024; // 20MB (API limit)
@@ -90,16 +92,21 @@ export default function ColorizationApp() {
     setPreviewUrl(url);
   }, [validateImage, maxFileSize]);
 
-  // Poll for results with proper error handling and retry logic
-  const pollForResults = useCallback(async (pollingUrl: string, maxAttempts = 60): Promise<{ status: string; result?: { sample: string }; error?: string }> => {
+    // Poll for results through our API proxy to avoid CORS
+  const pollForResults = useCallback(async (pollingUrl: string, maxAttempts = 30): Promise<{ status: string; result?: { sample: string }; error?: string }> => {
+    console.log('🔄 Polling URL:', pollingUrl);
+    
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
-        const response = await fetch(pollingUrl, {
-          method: 'GET',
+        console.log(`🔄 Attempt ${attempt + 1}/${maxAttempts} - Polling through proxy (CREDIT-FRIENDLY)`);
+        
+        // Use our API route instead of direct polling to avoid CORS
+        const response = await fetch('/api/poll-result', {
+          method: 'POST',
           headers: {
-            'accept': 'application/json',
-            'x-key': process.env.NEXT_PUBLIC_BFL_API_KEY || '',
+            'Content-Type': 'application/json',
           },
+          body: JSON.stringify({ pollingUrl }),
         });
 
         if (!response.ok) {
@@ -109,11 +116,26 @@ export default function ColorizationApp() {
         const data = await response.json();
         
         if (data.status === 'Ready') {
+          console.log(`✅ Image ready after ${attempt + 1} attempts! (Total credits used: 1)`);
           return data;
-        } else if (data.status === 'Processing') {
-          setProcessingStatus(`Processing... Attempt ${attempt + 1}/${maxAttempts}`);
-          // Wait 2 seconds before next attempt
-          await new Promise(resolve => setTimeout(resolve, 2000));
+        } else if (data.status === 'Processing' || data.status === 'Pending') {
+          setProcessingStatus(`Processing... Attempt ${attempt + 1}/${maxAttempts} (Credit-friendly polling)`);
+          
+          // CREDIT-FRIENDLY POLLING: Much longer waits to minimize credit consumption
+          let waitTime = 2000; // Start with 2 seconds (more patient)
+          
+          if (attempt < 2) {
+            waitTime = 3000; // First 2 attempts: wait 3 seconds (very patient)
+          } else if (attempt < 5) {
+            waitTime = 2000; // Next 3 attempts: wait 2 seconds
+          } else if (attempt < 10) {
+            waitTime = 3000; // Next 5 attempts: wait 3 seconds (slower)
+          } else {
+            waitTime = 5000; // After 10 attempts: wait 5 seconds (very slow)
+          }
+          
+          console.log(`⏳ Waiting ${waitTime}ms before next attempt... (Minimizing credit usage)`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
         } else if (data.status === 'Error' || data.status === 'Failed') {
           throw new Error(data.error || 'Processing failed');
         }
@@ -122,7 +144,7 @@ export default function ColorizationApp() {
           throw err;
         }
         // Wait before retry
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 3000));
       }
     }
     
@@ -180,22 +202,26 @@ export default function ColorizationApp() {
       // Poll for results
       const result = await pollForResults(data.data.polling_url);
       
-      if (result.status === 'Ready' && result.result?.sample) {
-        // Add result to the list
-        const newResult: ColorizationResult = {
-          original: previewUrl!,
-          colorized: result.result.sample,
-          timestamp: new Date(),
-          prompt: prompt
-        };
-        setResults(prev => [newResult, ...prev]);
+             if (result.status === 'Ready' && result.result?.sample) {
+         // Add result to the list
+         const newResult: ColorizationResult = {
+           original: previewUrl!,
+           colorized: result.result.sample,
+           timestamp: new Date(),
+           prompt: prompt
+         };
+         setResults(prev => [newResult, ...prev]);
 
-        // Mark free attempt as used
-        localStorage.setItem('sketcha_free_attempt_used', 'true');
-        setHasUsedFreeAttempt(true);
-        
-        setProcessingStatus('Complete!');
-      } else {
+         // Show result modal immediately
+         setCurrentResult(newResult);
+         setShowResultModal(true);
+
+         // Mark free attempt as used
+         localStorage.setItem('sketcha_free_attempt_used', 'true');
+         setHasUsedFreeAttempt(true);
+         
+         setProcessingStatus('Complete!');
+       } else {
         throw new Error('No result received from AI service');
       }
 
@@ -459,50 +485,143 @@ export default function ColorizationApp() {
             </div>
           )}
 
-          {/* Results */}
-          {results.length > 0 && (
-            <div className="mt-8">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Colorization Results</h3>
-              <div className="grid gap-6">
-                {results.map((result, index) => (
-                  <div key={index} className="bg-gray-50 rounded-lg p-6">
-                    <div className="mb-4">
-                      <p className="text-sm text-gray-600 mb-2">
-                        <span className="font-medium">Prompt used:</span> {result.prompt}
-                      </p>
-                    </div>
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <div>
-                        <h4 className="font-medium text-gray-900 mb-2">Original</h4>
-                        <Image
-                          src={result.original}
-                          alt="Original"
-                          width={300}
-                          height={300}
-                          className="rounded-lg object-cover"
-                        />
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900 mb-2">Colorized</h4>
-                        <Image
-                          src={result.colorized}
-                          alt="Colorized"
-                          width={300}
-                          height={300}
-                          className="rounded-lg object-cover"
-                        />
-                      </div>
-                    </div>
-                    <div className="mt-4 text-sm text-gray-500">
-                      Processed on {result.timestamp.toLocaleString()}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
+                     {/* Results */}
+           {results.length > 0 && (
+             <div className="mt-8">
+               <h3 className="text-xl font-semibold text-gray-900 mb-4">Colorization Results</h3>
+               <div className="grid gap-6">
+                 {results.map((result, index) => (
+                   <div key={index} className="bg-gray-50 rounded-lg p-6">
+                     <div className="mb-4">
+                       <p className="text-sm text-gray-600 mb-2">
+                         <span className="font-medium">Prompt used:</span> {result.prompt}
+                       </p>
+                     </div>
+                     <div className="grid md:grid-cols-2 gap-6">
+                       <div>
+                         <h4 className="font-medium text-gray-900 mb-2">Original</h4>
+                         <Image
+                           src={result.original}
+                           alt="Original"
+                           width={300}
+                           height={300}
+                           className="rounded-lg object-cover"
+                         />
+                       </div>
+                       <div>
+                         <h4 className="font-medium text-gray-900 mb-2">Colorized</h4>
+                         <Image
+                           src={result.colorized}
+                           alt="Colorized"
+                           width={300}
+                           height={300}
+                           className="rounded-lg object-cover"
+                         />
+                       </div>
+                     </div>
+                     <div className="mt-4 text-sm text-gray-500">
+                       Processed on {result.timestamp.toLocaleString()}
+                     </div>
+                   </div>
+                 ))}
+               </div>
+             </div>
+           )}
+         </div>
+       </div>
+     </div>
+
+     {/* Result Modal */}
+     {showResultModal && currentResult && (
+       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+         <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+           {/* Modal Header */}
+           <div className="flex items-center justify-between p-6 border-b border-gray-200">
+             <h2 className="text-2xl font-bold text-gray-900">🎨 Colorization Complete!</h2>
+             <button
+               onClick={() => setShowResultModal(false)}
+               className="text-gray-400 hover:text-gray-600 transition-colors"
+             >
+               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+               </svg>
+             </button>
+           </div>
+
+           {/* Modal Content */}
+           <div className="p-6">
+             {/* Prompt Used */}
+             <div className="mb-6">
+               <h3 className="text-lg font-semibold text-gray-900 mb-2">Prompt Used:</h3>
+               <p className="text-gray-700 bg-gray-50 p-3 rounded-lg border">
+                 {currentResult.prompt}
+               </p>
+             </div>
+
+             {/* Images Comparison */}
+             <div className="grid md:grid-cols-2 gap-6 mb-6">
+               {/* Original Image */}
+               <div>
+                 <h4 className="font-medium text-gray-900 mb-3 text-center">Original Image</h4>
+                 <div className="bg-gray-100 rounded-lg p-2">
+                   <Image
+                     src={currentResult.original}
+                     alt="Original"
+                     width={400}
+                     height={400}
+                     className="rounded-lg object-contain w-full h-auto"
+                   />
+                 </div>
+               </div>
+
+               {/* Colorized Image */}
+               <div>
+                 <h4 className="font-medium text-gray-900 mb-3 text-center">Colorized Result</h4>
+                 <div className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-lg p-2 border-2 border-orange-200">
+                   <Image
+                     src={currentResult.colorized}
+                     alt="Colorized"
+                     width={400}
+                     height={400}
+                     className="rounded-lg object-contain w-full h-auto"
+                   />
+                 </div>
+               </div>
+             </div>
+
+             {/* Processing Info */}
+             <div className="text-center text-sm text-gray-500 mb-6">
+               Processed on {currentResult.timestamp.toLocaleString()}
+             </div>
+
+             {/* Action Buttons */}
+             <div className="flex gap-3 justify-center">
+               <button
+                 onClick={() => {
+                   // Download colorized image
+                   const link = document.createElement('a');
+                   link.href = currentResult.colorized;
+                   link.download = 'colorized-image.jpg';
+                   link.click();
+                 }}
+                 className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2"
+               >
+                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                 </svg>
+                 Download Result
+               </button>
+               
+               <button
+                 onClick={() => setShowResultModal(false)}
+                 className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+               >
+                 Close
+               </button>
+             </div>
+           </div>
+         </div>
+       </div>
+     )}
+   );
+ }

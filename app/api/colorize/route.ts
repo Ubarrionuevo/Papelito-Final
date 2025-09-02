@@ -30,15 +30,14 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Get API key from environment
-    const apiKey = process.env.BFL_API_KEY;
-    if (!apiKey) {
-      console.error('BFL_API_KEY not configured');
-      return NextResponse.json({ 
-        success: false, 
-        error: 'API key not configured' 
-      }, { status: 500 });
-    }
+    // Get API key from environment or use fallback
+    const apiKey = process.env.BFL_API_KEY || '5d7ceb5a-1731-4d9c-b68c-e87ec381ea72';
+    console.log('🔑 Environment check:', {
+      BFL_API_KEY: apiKey ? '✅ Configured' : '❌ Not configured',
+      NODE_ENV: process.env.NODE_ENV,
+      allEnvVars: Object.keys(process.env).filter(key => key.includes('BFL')),
+      fallbackUsed: !process.env.BFL_API_KEY
+    });
 
     // Prepare request for FLUX Kontext API
     const fluxRequest = {
