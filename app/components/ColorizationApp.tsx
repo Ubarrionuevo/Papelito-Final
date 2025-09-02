@@ -4,8 +4,6 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { ColorizationResult } from '../../types/api';
 
-
-
 export default function ColorizationApp() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -92,7 +90,7 @@ export default function ColorizationApp() {
     setPreviewUrl(url);
   }, [validateImage, maxFileSize]);
 
-    // Poll for results through our API proxy to avoid CORS
+  // Poll for results through our API proxy to avoid CORS
   const pollForResults = useCallback(async (pollingUrl: string, maxAttempts = 30): Promise<{ status: string; result?: { sample: string }; error?: string }> => {
     console.log('🔄 Polling URL:', pollingUrl);
     
@@ -110,11 +108,12 @@ export default function ColorizationApp() {
         });
 
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
-        
+        console.log('🔄 Polling response:', data);
+
         if (data.status === 'Ready') {
           console.log(`✅ Image ready after ${attempt + 1} attempts! (Total credits used: 1)`);
           return data;
@@ -139,101 +138,92 @@ export default function ColorizationApp() {
         } else if (data.status === 'Error' || data.status === 'Failed') {
           throw new Error(data.error || 'Processing failed');
         }
-      } catch (err) {
+      } catch (error) {
+        console.error(`❌ Polling attempt ${attempt + 1} failed:`, error);
+        
         if (attempt === maxAttempts - 1) {
-          throw err;
+          throw error;
         }
+        
         // Wait before retry
         await new Promise(resolve => setTimeout(resolve, 3000));
       }
     }
     
-    throw new Error('Processing timeout. Please try again.');
+    throw new Error('Polling timeout - image processing took too long');
   }, []);
 
   const processImage = useCallback(async () => {
-    if (!selectedFile) return;
-
+    if (!selectedFile || !previewUrl) return;
+    
     // Check if user has already used their free attempt
     if (hasUsedFreeAttempt) {
-      setError('You have already used your free attempt. Please upgrade to continue.');
+      setError('You have already used your free attempt. Please purchase a plan to continue.');
       return;
     }
 
     setIsProcessing(true);
     setError(null);
-    setProcessingStatus('Preparing image...');
+    setProcessingStatus('Converting image...');
 
     try {
       // Convert file to base64
-      const imageBase64 = await fileToBase64(selectedFile);
-      
-      // Prepare request for FLUX Kontext API
-      const requestBody = {
-        prompt: prompt,
-        input_image: imageBase64,
-        aspect_ratio: "1:1",
-        output_format: "jpeg"
-      };
+      const base64Image = await fileToBase64(selectedFile);
+      setProcessingStatus('Sending to AI...');
 
-      setProcessingStatus('Sending to AI service...');
+      // Prepare request for FLUX Kontext API
+      const requestData = {
+        prompt: prompt,
+        input_image: base64Image,
+        aspect_ratio: '1:1',
+        output_format: 'jpg'
+      };
 
       const response = await fetch('/api/colorize', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify(requestData),
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to process image');
       }
 
       const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to start processing');
-      }
-
-      setProcessingStatus('AI is processing your image...');
+      setProcessingStatus('Processing with AI...');
 
       // Poll for results
       const result = await pollForResults(data.data.polling_url);
       
-             if (result.status === 'Ready' && result.result?.sample) {
-         // Add result to the list
-         const newResult: ColorizationResult = {
-           original: previewUrl!,
-           colorized: result.result.sample,
-           timestamp: new Date(),
-           prompt: prompt
-         };
-         setResults(prev => [newResult, ...prev]);
-
-         // Show result modal immediately
-         setCurrentResult(newResult);
-         setShowResultModal(true);
-
-         // Mark free attempt as used
-         localStorage.setItem('sketcha_free_attempt_used', 'true');
-         setHasUsedFreeAttempt(true);
-         
-         setProcessingStatus('Complete!');
-       } else {
-        throw new Error('No result received from AI service');
+      if (result.status === 'Ready' && result.result?.sample) {
+        // Add result to the list
+        const newResult: ColorizationResult = {
+          original: previewUrl,
+          colorized: result.result.sample,
+          timestamp: new Date(),
+          prompt: prompt
+        };
+        
+        setResults(prev => [newResult, ...prev]);
+        setCurrentResult(newResult);
+        setShowResultModal(true);
+        
+        // Mark free attempt as used
+        localStorage.setItem('sketcha_free_attempt_used', 'true');
+        setHasUsedFreeAttempt(true);
+        setProcessingStatus('Complete!');
       }
-
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
-      setError(`Colorization failed: ${errorMessage}`);
-      console.error('Colorization error:', err);
+    } catch (error) {
+      console.error('Colorization error:', error);
+      setError(error instanceof Error ? error.message : 'An error occurred during colorization');
     } finally {
       setIsProcessing(false);
       setProcessingStatus('');
     }
-  }, [selectedFile, previewUrl, prompt, hasUsedFreeAttempt, pollForResults, fileToBase64]);
+  }, [selectedFile, previewUrl, prompt, hasUsedFreeAttempt, pollForResults]);
 
   const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -246,7 +236,7 @@ export default function ColorizationApp() {
         setPreviewUrl(url);
         setError(null);
       } else {
-        setError('Please drop a valid image file.');
+        setError('Please select a valid image file.');
       }
     }
   }, []);
@@ -255,147 +245,64 @@ export default function ColorizationApp() {
     event.preventDefault();
   }, []);
 
-  const resetFreeAttempt = () => {
-    localStorage.removeItem('sketcha_free_attempt_used');
-    setHasUsedFreeAttempt(false);
-    setError(null);
-    setResults([]);
-  };
-
   // Predefined prompts for colorization
   const predefinedPrompts = [
     {
-      name: "Natural Colors",
-      prompt: "Apply realistic, natural colors to this sketch while maintaining the original style and details",
-      description: "Realistic and natural color palette"
+      name: 'Natural Colors',
+      prompt: 'Apply realistic, natural colors to this sketch while maintaining the original style and details',
+      description: 'Perfect for landscapes and portraits'
     },
     {
-      name: "Warm Theme",
-      prompt: "Use warm, golden color palette with orange, yellow, and warm brown tones",
-      description: "Sunset and warm atmosphere"
+      name: 'Vibrant Style',
+      prompt: 'Use bright, vibrant colors to make this sketch pop with energy and excitement',
+      description: 'Great for cartoons and illustrations'
     },
     {
-      name: "Cool Theme",
-      prompt: "Apply cool, blue-based colors with greens, purples, and cool grays",
-      description: "Cool and calm atmosphere"
+      name: 'Professional Look',
+      prompt: 'Apply professional, polished colors suitable for business presentations and formal use',
+      description: 'Ideal for corporate materials'
     },
     {
-      name: "Vibrant Style",
-      prompt: "Use bright, saturated colors with high contrast and vivid tones",
-      description: "Bright and energetic colors"
-    },
-    {
-      name: "Moody Atmosphere",
-      prompt: "Apply dark, atmospheric colors with deep shadows and moody tones",
-      description: "Dark and dramatic mood"
-    },
-    {
-      name: "Anime Style",
-      prompt: "Colorize with vibrant anime-style colors, bright and cheerful palette",
-      description: "Bright anime character colors"
+      name: 'Artistic Interpretation',
+      prompt: 'Create an artistic color interpretation that adds depth and emotion to this sketch',
+      description: 'Perfect for creative projects'
     }
   ];
 
-  // If user has used their free attempt, show blocked message
-  if (hasUsedFreeAttempt && results.length === 0) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
-          <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Free Attempt Used!
-          </h2>
-          <p className="text-gray-600 mb-6">
-            You have used your free attempt. The colorization feature is now locked.
-          </p>
-          <button
-            onClick={resetFreeAttempt}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-full font-medium transition-colors"
-          >
-            Reset (for testing)
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            AI Image Colorization
-          </h1>
-          <p className="text-xl text-gray-600 mb-6">
-            Transform your black and white images with intelligent AI colorization
-          </p>
-          
-          {!hasUsedFreeAttempt && (
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
-              <div className="flex items-center justify-center gap-2 text-orange-800">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span className="font-medium">1 Free Attempt Included!</span>
-              </div>
-              <p className="text-orange-700 text-sm mt-1">
-                Try our AI colorization for free. No registration required.
-              </p>
-            </div>
-          )}
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-4 sm:p-6 lg:p-8">
+      {/* Header */}
+      <div className="max-w-4xl mx-auto mb-8">
+        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 text-center mb-4">
+          AI-Powered Image Colorization
+        </h1>
+        <p className="text-lg text-gray-600 text-center max-w-2xl mx-auto">
+          Transform your black and white sketches into vibrant, colored masterpieces using advanced artificial intelligence.
+        </p>
+      </div>
 
-        {/* Main Content */}
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          {/* File Upload Area */}
+      {/* Main Content */}
+      <div className="max-w-4xl mx-auto space-y-8">
+        {/* File Upload Area */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Upload Your Image</h2>
+          
           <div
             className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
-              selectedFile ? 'border-green-300 bg-green-50' : 'border-gray-300 hover:border-orange-400'
+              previewUrl ? 'border-orange-300 bg-orange-50' : 'border-gray-300 hover:border-gray-400'
             }`}
             onDrop={handleDrop}
             onDragOver={handleDragOver}
           >
-            {!previewUrl ? (
-              <div>
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                </div>
-                <p className="text-lg font-medium text-gray-900 mb-2">
-                  Drop your image here or click to browse
-                </p>
-                                  <p className="text-gray-500 mb-4">
-                    Supports JPG, PNG, GIF up to 20MB
-                  </p>
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-medium transition-colors"
-                >
-                  Choose File
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-              </div>
-            ) : (
-              <div>
-                <div className="relative inline-block mb-4">
+            {previewUrl ? (
+              <div className="space-y-4">
+                <div className="relative inline-block">
                   <Image
                     src={previewUrl}
                     alt="Preview"
                     width={200}
                     height={200}
-                    className="rounded-lg object-cover"
+                    className="rounded-lg object-contain max-h-48"
                   />
                   <button
                     onClick={() => {
@@ -408,220 +315,259 @@ export default function ColorizationApp() {
                     ×
                   </button>
                 </div>
-                <p className="text-green-600 font-medium mb-4">
-                  Image selected successfully!
-                </p>
-                
-                {/* Prompt Input */}
-                <div className="mb-4 text-left">
-                  <label className="block text-sm font-bold text-gray-900 mb-2">
-                    How would you like to colorize this image?
-                  </label>
-                  
-                  {/* Predefined Prompts */}
-                  <div className="mb-3">
-                    <p className="text-xs text-gray-600 mb-2 font-medium">Quick options:</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {predefinedPrompts.map((option, index) => (
-                        <button
-                          key={index}
-                          onClick={() => setPrompt(option.prompt)}
-                          className={`text-xs px-3 py-2 rounded-lg border transition-colors ${
-                            prompt === option.prompt
-                              ? 'bg-orange-500 text-white border-orange-500'
-                              : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
-                          }`}
-                          title={option.description}
-                        >
-                          {option.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <textarea
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="Or write your own custom instructions..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none text-gray-900 placeholder-gray-500 bg-white"
-                    rows={3}
-                  />
-                  <p className="text-xs text-gray-600 mt-1 font-medium">
-                    Examples: &quot;Apply red and gold colors&quot;, &quot;Use pastel palette&quot;, &quot;Colorize with sunset orange and purple&quot;
-                  </p>
+                <p className="text-sm text-gray-600">Image ready for colorization</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
                 </div>
-                
+                <div>
+                  <p className="text-lg font-medium text-gray-900">Drop your image here</p>
+                  <p className="text-sm text-gray-500">or click to browse</p>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
                 <button
-                  onClick={processImage}
-                  disabled={isProcessing || hasUsedFreeAttempt}
-                  className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 text-white px-8 py-3 rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-medium transition-colors"
                 >
-                  {isProcessing ? 'Processing...' : hasUsedFreeAttempt ? 'Free Attempt Used' : 'Colorize Image'}
+                  Choose File
                 </button>
-
-                {/* Processing Status */}
-                {isProcessing && processingStatus && (
-                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="flex items-center gap-2 text-blue-800">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                      <span className="text-sm font-medium">{processingStatus}</span>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>
+        </div>
 
-          {/* Error Display */}
-          {error && (
-            <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-red-800">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        {/* Prompt Input */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
+          <label htmlFor="prompt" className="block text-sm font-bold text-gray-900 mb-2">
+            Colorization Instructions
+          </label>
+          <textarea
+            id="prompt"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            rows={3}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors resize-none"
+            placeholder="Or write your own custom instructions..."
+            style={{ color: '#111827' }}
+          />
+          
+          {/* Predefined Prompts */}
+          <div className="mt-4">
+            <p className="text-xs text-gray-600 mb-2 font-medium">Quick prompts:</p>
+            <div className="flex flex-wrap gap-2">
+              {predefinedPrompts.map((promptOption, index) => (
+                <button
+                  key={index}
+                  onClick={() => setPrompt(promptOption.prompt)}
+                  className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full transition-colors"
+                >
+                  {promptOption.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Processing Status */}
+        {processingStatus && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-blue-700 font-medium">{processingStatus}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+            <p className="text-red-700 font-medium">{error}</p>
+          </div>
+        )}
+
+        {/* Results */}
+        {results.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Your Colorized Images</h2>
+            <div className="grid gap-4">
+              {results.map((result, index) => (
+                <div key={index} className="border border-gray-200 rounded-lg p-4">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <h3 className="font-medium text-gray-900 mb-2">Original</h3>
+                      <Image
+                        src={result.original}
+                        alt="Original"
+                        width={200}
+                        height={200}
+                        className="rounded-lg object-contain w-full h-auto"
+                      />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-900 mb-2">Colorized</h3>
+                      <Image
+                        src={result.colorized}
+                        alt="Colorized"
+                        width={200}
+                        height={200}
+                        className="rounded-lg object-contain w-full h-auto"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4 text-sm text-gray-600">
+                    <p><strong>Prompt:</strong> {result.prompt}</p>
+                    <p><strong>Processed:</strong> {result.timestamp.toLocaleString()}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* If user has used their free attempt, show blocked message */}
+        {hasUsedFreeAttempt && !showResultModal && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center">
+            <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-yellow-900 mb-2">Free Trial Complete!</h3>
+            <p className="text-yellow-700 mb-4">
+              You&apos;ve used your free colorization attempt. Purchase a plan to continue creating amazing colored images!
+            </p>
+            <button
+              onClick={() => window.location.href = '/#pricing'}
+              className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+            >
+              View Pricing Plans
+            </button>
+          </div>
+        )}
+
+        {/* Process Button */}
+        {!hasUsedFreeAttempt && selectedFile && previewUrl && (
+          <div className="text-center">
+            <button
+              onClick={processImage}
+              disabled={isProcessing}
+              className="bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white px-8 py-3 rounded-full font-bold text-lg transition-colors shadow-lg hover:shadow-xl disabled:cursor-not-allowed"
+            >
+              {isProcessing ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Processing...
+                </div>
+              ) : (
+                'Colorize Image'
+              )}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Result Modal */}
+      {showResultModal && currentResult && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-900">🎨 Colorization Complete!</h2>
+              <button
+                onClick={() => setShowResultModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
-                <span className="font-medium">Error:</span>
-                <span>{error}</span>
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              {/* Prompt Used */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Prompt Used:</h3>
+                <p className="text-gray-700 bg-gray-50 p-3 rounded-lg border">
+                  {currentResult.prompt}
+                </p>
+              </div>
+
+              {/* Images Comparison */}
+              <div className="grid md:grid-cols-2 gap-6 mb-6">
+                {/* Original Image */}
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3 text-center">Original Image</h4>
+                  <div className="bg-gray-100 rounded-lg p-2">
+                    <Image
+                      src={currentResult.original}
+                      alt="Original"
+                      width={400}
+                      height={400}
+                      className="rounded-lg object-contain w-full h-auto"
+                    />
+                  </div>
+                </div>
+
+                {/* Colorized Image */}
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3 text-center">Colorized Result</h4>
+                  <div className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-lg p-2 border-2 border-orange-200">
+                    <Image
+                      src={currentResult.colorized}
+                      alt="Colorized"
+                      width={400}
+                      height={400}
+                      className="rounded-lg object-contain w-full h-auto"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Processing Info */}
+              <div className="text-center text-sm text-gray-500 mb-6">
+                Processed on {currentResult.timestamp.toLocaleString()}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => {
+                    // Download colorized image
+                    const link = document.createElement('a');
+                    link.href = currentResult.colorized;
+                    link.download = 'colorized-image.jpg';
+                    link.click();
+                  }}
+                  className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Download Result
+                </button>
+                
+                <button
+                  onClick={() => setShowResultModal(false)}
+                  className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                >
+                  Close
+                </button>
               </div>
             </div>
-          )}
-
-                     {/* Results */}
-           {results.length > 0 && (
-             <div className="mt-8">
-               <h3 className="text-xl font-semibold text-gray-900 mb-4">Colorization Results</h3>
-               <div className="grid gap-6">
-                 {results.map((result, index) => (
-                   <div key={index} className="bg-gray-50 rounded-lg p-6">
-                     <div className="mb-4">
-                       <p className="text-sm text-gray-600 mb-2">
-                         <span className="font-medium">Prompt used:</span> {result.prompt}
-                       </p>
-                     </div>
-                     <div className="grid md:grid-cols-2 gap-6">
-                       <div>
-                         <h4 className="font-medium text-gray-900 mb-2">Original</h4>
-                         <Image
-                           src={result.original}
-                           alt="Original"
-                           width={300}
-                           height={300}
-                           className="rounded-lg object-cover"
-                         />
-                       </div>
-                       <div>
-                         <h4 className="font-medium text-gray-900 mb-2">Colorized</h4>
-                         <Image
-                           src={result.colorized}
-                           alt="Colorized"
-                           width={300}
-                           height={300}
-                           className="rounded-lg object-cover"
-                         />
-                       </div>
-                     </div>
-                     <div className="mt-4 text-sm text-gray-500">
-                       Processed on {result.timestamp.toLocaleString()}
-                     </div>
-                   </div>
-                 ))}
-               </div>
-             </div>
-           )}
-         </div>
-       </div>
-
-       {/* Result Modal */}
-       {showResultModal && currentResult && (
-         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-           <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-             {/* Modal Header */}
-             <div className="flex items-center justify-between p-6 border-b border-gray-200">
-               <h2 className="text-2xl font-bold text-gray-900">🎨 Colorization Complete!</h2>
-               <button
-                 onClick={() => setShowResultModal(false)}
-                 className="text-gray-400 hover:text-gray-600 transition-colors"
-               >
-                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                 </svg>
-               </button>
-             </div>
-
-             {/* Modal Content */}
-             <div className="p-6">
-               {/* Prompt Used */}
-               <div className="mb-6">
-                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Prompt Used:</h3>
-                 <p className="text-gray-700 bg-gray-50 p-3 rounded-lg border">
-                   {currentResult.prompt}
-                 </p>
-               </div>
-
-               {/* Images Comparison */}
-               <div className="grid md:grid-cols-2 gap-6 mb-6">
-                 {/* Original Image */}
-                 <div>
-                   <h4 className="font-medium text-gray-900 mb-3 text-center">Original Image</h4>
-                   <div className="bg-gray-100 rounded-lg p-2">
-                     <Image
-                       src={currentResult.original}
-                       alt="Original"
-                       width={400}
-                       height={400}
-                       className="rounded-lg object-contain w-full h-auto"
-                     />
-                   </div>
-                 </div>
-
-                 {/* Colorized Image */}
-                 <div>
-                   <h4 className="font-medium text-gray-900 mb-3 text-center">Colorized Result</h4>
-                   <div className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-lg p-2 border-2 border-orange-200">
-                     <Image
-                       src={currentResult.colorized}
-                       alt="Colorized"
-                       width={400}
-                       height={400}
-                       className="rounded-lg object-contain w-full h-auto"
-                     />
-                   </div>
-                 </div>
-               </div>
-
-               {/* Processing Info */}
-               <div className="text-center text-sm text-gray-500 mb-6">
-                 Processed on {currentResult.timestamp.toLocaleString()}
-               </div>
-
-               {/* Action Buttons */}
-               <div className="flex gap-3 justify-center">
-                 <button
-                   onClick={() => {
-                     // Download colorized image
-                     const link = document.createElement('a');
-                     link.href = currentResult.colorized;
-                     link.download = 'colorized-image.jpg';
-                     link.click();
-                   }}
-                   className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2"
-                 >
-                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                   </svg>
-                   Download Result
-                 </button>
-                 
-                 <button
-                   onClick={() => setShowResultModal(false)}
-                   className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-                 >
-                   Close
-                 </button>
-               </div>
-             </div>
-           </div>
-         </div>
-       )}
-     </div>
-   );
- }
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
