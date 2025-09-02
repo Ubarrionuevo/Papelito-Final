@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { ColorizeRequest } from '../../../types/api';
 
 export async function POST(request: NextRequest) {
   try {
     // Parse JSON body
-    const body = await request.json();
+    const body: ColorizeRequest = await request.json();
     const { prompt, input_image, aspect_ratio, output_format } = body;
 
     // Validate required fields

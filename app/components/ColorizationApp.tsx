@@ -2,13 +2,9 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Image from 'next/image';
+import { ColorizationResult } from '../../types/api';
 
-interface ColorizationResult {
-  original: string;
-  colorized: string;
-  timestamp: Date;
-  prompt: string;
-}
+
 
 export default function ColorizationApp() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -348,9 +344,9 @@ export default function ColorizationApp() {
                 <p className="text-lg font-medium text-gray-900 mb-2">
                   Drop your image here or click to browse
                 </p>
-                <p className="text-gray-500 mb-4">
-                  Supports JPG, PNG, GIF up to 20MB
-                </p>
+                                  <p className="text-gray-500 mb-4">
+                    Supports JPG, PNG, GIF up to 20MB
+                  </p>
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-medium transition-colors"
