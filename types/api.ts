@@ -45,3 +45,4 @@ export interface ColorizationResult {
   timestamp: Date;
   prompt: string;
 }
+

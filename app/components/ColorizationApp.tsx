@@ -11,7 +11,9 @@ export default function ColorizationApp() {
   const [results, setResults] = useState<ColorizationResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [prompt, setPrompt] = useState<string>('Apply realistic, natural colors to this sketch while maintaining the original style and details');
-  const [hasUsedFreeAttempt, setHasUsedFreeAttempt] = useState(false);
+  const [userCredits, setUserCredits] = useState<number>(0);
+  const [userPlan, setUserPlan] = useState<string>('free');
+  const [isLoadingCredits, setIsLoadingCredits] = useState(true);
   const [processingStatus, setProcessingStatus] = useState<string>('');
   const [showResultModal, setShowResultModal] = useState(false);
   const [currentResult, setCurrentResult] = useState<ColorizationResult | null>(null);
@@ -20,13 +22,87 @@ export default function ColorizationApp() {
   const maxFileSize = 20 * 1024 * 1024; // 20MB (API limit)
   const maxPixels = 20 * 1024 * 1024; // 20 megapixels (API limit)
 
-  // Check if user has already used their free attempt
+  // Load user credits on component mount
   useEffect(() => {
-    const usedAttempt = localStorage.getItem('sketcha_free_attempt_used');
-    if (usedAttempt === 'true') {
-      setHasUsedFreeAttempt(true);
-    }
+    loadUserCredits();
   }, []);
+
+  const loadUserCredits = async () => {
+    try {
+      // Generate a simple user ID based on browser fingerprint
+      const userId = generateUserId();
+      
+      const response = await fetch(`/api/credits?userId=${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setUserCredits(data.credits);
+        setUserPlan(data.plan);
+        console.log(`📊 User credits loaded: ${data.credits} credits (${data.plan} plan)`);
+      }
+    } catch (error) {
+      console.error('Failed to load user credits:', error);
+      // Fallback to free plan
+      setUserCredits(1);
+      setUserPlan('free');
+    } finally {
+      setIsLoadingCredits(false);
+    }
+  };
+
+  const generateUserId = () => {
+    // Try to get existing user ID from localStorage
+    let userId = localStorage.getItem('sketcha_user_id');
+    
+    if (!userId) {
+      // Generate a new user ID based on browser fingerprint
+      const fingerprint = [
+        navigator.userAgent,
+        navigator.language,
+        screen.width + 'x' + screen.height,
+        new Date().getTimezoneOffset()
+      ].join('|');
+      
+      // Simple hash function
+      let hash = 0;
+      for (let i = 0; i < fingerprint.length; i++) {
+        const char = fingerprint.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32-bit integer
+      }
+      
+      userId = 'user_' + Math.abs(hash).toString(36);
+      localStorage.setItem('sketcha_user_id', userId);
+    }
+    
+    return userId;
+  };
+
+  const deductCredit = async () => {
+    try {
+      const userId = generateUserId();
+      
+      const response = await fetch('/api/credits', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          creditsToDeduct: 1
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUserCredits(data.credits);
+        console.log(`💳 Credit deducted. Remaining: ${data.credits}`);
+      } else {
+        console.error('Failed to deduct credit');
+      }
+    } catch (error) {
+      console.error('Error deducting credit:', error);
+    }
+  };
 
   // Convert file to base64 with proper error handling
   const fileToBase64 = useCallback((file: File): Promise<string> => {
@@ -156,9 +232,9 @@ export default function ColorizationApp() {
   const processImage = useCallback(async () => {
     if (!selectedFile || !previewUrl) return;
     
-    // Check if user has already used their free attempt
-    if (hasUsedFreeAttempt) {
-      setError('You have already used your free attempt. Please purchase a plan to continue.');
+    // Check if user has credits available
+    if (userCredits <= 0) {
+      setError('You have no credits remaining. Please purchase a plan to continue.');
       return;
     }
 
@@ -211,9 +287,8 @@ export default function ColorizationApp() {
         setCurrentResult(newResult);
         setShowResultModal(true);
         
-        // Mark free attempt as used
-        localStorage.setItem('sketcha_free_attempt_used', 'true');
-        setHasUsedFreeAttempt(true);
+        // Deduct 1 credit after successful processing
+        await deductCredit();
         setProcessingStatus('Complete!');
       }
     } catch (error) {
@@ -223,7 +298,7 @@ export default function ColorizationApp() {
       setIsProcessing(false);
       setProcessingStatus('');
     }
-  }, [selectedFile, previewUrl, prompt, hasUsedFreeAttempt, pollForResults]);
+  }, [selectedFile, previewUrl, prompt, userCredits, pollForResults, deductCredit]);
 
   const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -434,17 +509,48 @@ export default function ColorizationApp() {
           </div>
         )}
 
-        {/* If user has used their free attempt, show blocked message */}
-        {hasUsedFreeAttempt && !showResultModal && (
+        {/* Credits Display */}
+        {!isLoadingCredits && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-blue-900">
+                    {userCredits} {userCredits === 1 ? 'Credit' : 'Credits'} Available
+                  </p>
+                  <p className="text-xs text-blue-700 capitalize">
+                    {userPlan} Plan
+                  </p>
+                </div>
+              </div>
+              {userCredits === 0 && (
+                <button
+                  onClick={() => window.location.href = '/#pricing'}
+                  className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Buy Credits
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* If user has no credits, show blocked message */}
+        {!isLoadingCredits && userCredits <= 0 && !showResultModal && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center">
             <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
-            <h3 className="text-xl font-bold text-yellow-900 mb-2">Free Trial Complete!</h3>
+            <h3 className="text-xl font-bold text-yellow-900 mb-2">No Credits Remaining!</h3>
             <p className="text-yellow-700 mb-4">
-              You&apos;ve used your free colorization attempt. Purchase a plan to continue creating amazing colored images!
+              You&apos;ve used all your available credits. Purchase a plan to continue creating amazing colored images!
             </p>
             <button
               onClick={() => window.location.href = '/#pricing'}
@@ -456,7 +562,7 @@ export default function ColorizationApp() {
         )}
 
         {/* Process Button */}
-        {!hasUsedFreeAttempt && selectedFile && previewUrl && (
+        {!isLoadingCredits && userCredits > 0 && selectedFile && previewUrl && (
           <div className="text-center">
             <button
               onClick={processImage}

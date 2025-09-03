@@ -106,7 +106,7 @@ export default function PricingCard({
         </motion.a>
       ) : title === "Professional" ? (
         <motion.a
-          href="https://buy.polar.sh/polar_cl_Ljqx9geGWiNbEflEh8QKscv341ZqXf7LlEM3o69AF"
+          href="https://buy.polar.sh/polar_cl_TSIHrLY3B2zCK9K0iZfR9hYNSSzBtXKNgWeFn29xZNn"
           target="_blank"
           rel="noopener noreferrer"
           whileHover={{ scale: 1.02 }}
