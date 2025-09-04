@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     // Create webhook instance
     const wh = new Webhook(webhookSecret);
 
-    let evt: { type: string; data: Record<string, unknown> };
+    let evt: unknown;
 
     try {
       // Verify the webhook
@@ -46,37 +46,37 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the event type
-    const eventType = evt.type;
+    const eventType = (evt as { type: string }).type;
     console.log('🎉 Webhook received:', eventType);
 
     // Handle different event types
     switch (eventType) {
       case 'order.created':
-        await handleOrderCreated(evt.data);
+        await handleOrderCreated((evt as { data: any }).data);
         break;
       
       case 'order.updated':
-        await handleOrderUpdated(evt.data);
+        await handleOrderUpdated((evt as { data: any }).data);
         break;
       
       case 'subscription.created':
-        await handleSubscriptionCreated(evt.data);
+        await handleSubscriptionCreated((evt as { data: any }).data);
         break;
       
       case 'subscription.updated':
-        await handleSubscriptionUpdated(evt.data);
+        await handleSubscriptionUpdated((evt as { data: any }).data);
         break;
       
       case 'subscription.canceled':
-        await handleSubscriptionCanceled(evt.data);
+        await handleSubscriptionCanceled((evt as { data: any }).data);
         break;
       
       case 'payment.completed':
-        await handlePaymentCompleted(evt.data);
+        await handlePaymentCompleted((evt as { data: any }).data);
         break;
       
       case 'payment.failed':
-        await handlePaymentFailed(evt.data);
+        await handlePaymentFailed((evt as { data: any }).data);
         break;
       
       default:
