@@ -52,31 +52,31 @@ export async function POST(request: NextRequest) {
     // Handle different event types
     switch (eventType) {
       case 'order.created':
-        await handleOrderCreated((evt as { data: any }).data);
+        await handleOrderCreated((evt as { data: Record<string, unknown> }).data);
         break;
       
       case 'order.updated':
-        await handleOrderUpdated((evt as { data: any }).data);
+        await handleOrderUpdated((evt as { data: Record<string, unknown> }).data);
         break;
       
       case 'subscription.created':
-        await handleSubscriptionCreated((evt as { data: any }).data);
+        await handleSubscriptionCreated((evt as { data: Record<string, unknown> }).data);
         break;
       
       case 'subscription.updated':
-        await handleSubscriptionUpdated((evt as { data: any }).data);
+        await handleSubscriptionUpdated((evt as { data: Record<string, unknown> }).data);
         break;
       
       case 'subscription.canceled':
-        await handleSubscriptionCanceled((evt as { data: any }).data);
+        await handleSubscriptionCanceled((evt as { data: Record<string, unknown> }).data);
         break;
       
       case 'payment.completed':
-        await handlePaymentCompleted((evt as { data: any }).data);
+        await handlePaymentCompleted((evt as { data: Record<string, unknown> }).data);
         break;
       
       case 'payment.failed':
-        await handlePaymentFailed((evt as { data: any }).data);
+        await handlePaymentFailed((evt as { data: Record<string, unknown> }).data);
         break;
       
       default:
