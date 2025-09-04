@@ -202,6 +202,10 @@ export default function ColorizationApp() {
 
         if (data.status === 'Ready') {
           console.log(`✅ Image ready after ${attempt + 1} attempts! (Total credits used: 1)`);
+          console.log('🎨 FLUX Result data:', data);
+          console.log('🖼️ Image URL:', data.result?.sample);
+          console.log('🔍 Full result object:', data.result);
+          console.log('📋 All available fields:', Object.keys(data));
           return data;
         } else if (data.status === 'Processing' || data.status === 'Pending') {
           setProcessingStatus(`Processing... Attempt ${attempt + 1}/${maxAttempts} (Credit-friendly polling)`);
@@ -295,12 +299,28 @@ export default function ColorizationApp() {
       
       if (result.status === 'Ready' && result.result?.sample) {
         // Add result to the list
-        const newResult: ColorizationResult = {
+        console.log('🔍 Creating result object:', {
           original: previewUrl,
           colorized: result.result.sample,
+          resultStructure: result
+        });
+        
+        // Validate the image URL
+        const imageUrl = result.result.sample;
+        console.log('🔗 Image URL validation:', {
+          url: imageUrl,
+          isValid: imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http'),
+          length: imageUrl?.length
+        });
+        
+        const newResult: ColorizationResult = {
+          original: previewUrl,
+          colorized: imageUrl,
           timestamp: new Date(),
           prompt: prompt
         };
+        
+        console.log('✅ Final result object:', newResult);
         
         setResults(prev => [newResult, ...prev]);
         setCurrentResult(newResult);
@@ -654,13 +674,28 @@ export default function ColorizationApp() {
                 <div>
                   <h4 className="font-medium text-gray-900 mb-3 text-center">Colorized Result</h4>
                   <div className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-lg p-2 border-2 border-orange-200">
-                    <Image
-                      src={currentResult.colorized}
-                      alt="Colorized"
-                      width={400}
-                      height={400}
-                      className="rounded-lg object-contain w-full h-auto"
-                    />
+                    {currentResult.colorized ? (
+                      <img
+                        src={currentResult.colorized}
+                        alt="Colorized"
+                        className="rounded-lg object-contain w-full h-auto max-h-96"
+                        onError={(e) => {
+                          console.error('❌ Error loading colorized image:', currentResult.colorized);
+                          console.error('Image error:', e);
+                        }}
+                        onLoad={() => {
+                          console.log('✅ Colorized image loaded successfully:', currentResult.colorized);
+                        }}
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-64 bg-gray-100 rounded-lg">
+                        <div className="text-center">
+                          <div className="text-gray-500 mb-2">⚠️</div>
+                          <p className="text-gray-500">Image URL not available</p>
+                          <p className="text-xs text-gray-400 mt-1">Check console for details</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
