@@ -179,7 +179,7 @@ async function handlePaymentCompleted(data: { id: string; order_id: string; amou
   
   if (plan && credits) {
     // Get user ID from customer data
-    const userId = getUserIdFromCustomer(data.customer) || data.customer_id;
+    const userId = getUserIdFromCustomer(data.customer);
     
     if (userId) {
       addUserCredits(userId, credits, plan, data.customer?.email);
