@@ -23,7 +23,7 @@ export default function ColorizationApp() {
   const maxFileSize = 20 * 1024 * 1024; // 20MB (API limit)
   const maxPixels = 20 * 1024 * 1024; // 20 megapixels (API limit)
 
-  const loadUserCredits = async () => {
+  const loadUserCredits = useCallback(async () => {
     try {
       // Generate a simple user ID based on browser fingerprint
       const userId = generateUserId();
@@ -48,7 +48,7 @@ export default function ColorizationApp() {
     } finally {
       setIsLoadingCredits(false);
     }
-  };
+  }, []);
 
   const generateUserId = () => {
     // Try to get existing user ID from localStorage
@@ -82,9 +82,9 @@ export default function ColorizationApp() {
   useEffect(() => {
     loadUserCredits();
     analytics.appOpened(); // Track when user opens the app
-  }, []);
+  }, [loadUserCredits]);
 
-  const deductCredit = async () => {
+  const deductCredit = useCallback(async () => {
     try {
       const userId = generateUserId();
       
@@ -112,7 +112,7 @@ export default function ColorizationApp() {
     } catch (error) {
       console.error('Error deducting credit:', error);
     }
-  };
+  }, []);
 
   // Convert file to base64 with proper error handling
   const fileToBase64 = useCallback((file: File): Promise<string> => {

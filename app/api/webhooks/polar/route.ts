@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     // Create webhook instance
     const wh = new Webhook(webhookSecret);
 
-    let evt: { type: string; data: any };
+    let evt: { type: string; data: Record<string, unknown> };
 
     try {
       // Verify the webhook
