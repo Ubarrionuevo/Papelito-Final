@@ -248,6 +248,12 @@ export default function ColorizationApp() {
       return;
     }
 
+    // Check if prompt is provided
+    if (!prompt || prompt.trim().length === 0) {
+      setError('Please enter a description for your image colorization.');
+      return;
+    }
+
     setIsProcessing(true);
     setError(null);
     setProcessingStatus('Converting image...');
@@ -265,7 +271,7 @@ export default function ColorizationApp() {
         prompt: prompt,
         input_image: base64Image,
         aspect_ratio: '1:1',
-        output_format: 'jpg'
+        output_format: 'jpeg'
       };
 
       const response = await fetch('/api/colorize', {

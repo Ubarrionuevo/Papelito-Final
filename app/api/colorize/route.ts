@@ -48,7 +48,14 @@ export async function POST(request: NextRequest) {
       safety_tolerance: 2
     };
 
-    console.log('Sending request to FLUX Kontext API...');
+    console.log('🔍 FLUX Request details:', {
+      prompt: prompt.substring(0, 50) + '...',
+      input_image_length: input_image.length,
+      aspect_ratio: aspect_ratio || "1:1",
+      output_format: output_format || "jpeg",
+      safety_tolerance: 2,
+      apiKey: apiKey ? '✅ Present' : '❌ Missing'
+    });
 
     // Call FLUX Kontext API
     const response = await fetch('https://api.bfl.ai/v1/flux-kontext-pro', {
@@ -63,15 +70,22 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('FLUX Kontext API error:', {
+      console.error('❌ FLUX Kontext API error:', {
         status: response.status,
         statusText: response.statusText,
-        error: errorText
+        error: errorText,
+        requestData: {
+          prompt: prompt.substring(0, 100) + '...',
+          input_image_length: input_image.length,
+          aspect_ratio: aspect_ratio || "1:1",
+          output_format: output_format || "jpeg"
+        }
       });
       
       return NextResponse.json({ 
         success: false, 
-        error: `FLUX API error: ${response.status} ${response.statusText}` 
+        error: `FLUX API error: ${response.status} ${response.statusText}`,
+        details: errorText
       }, { status: response.status });
     }
 
