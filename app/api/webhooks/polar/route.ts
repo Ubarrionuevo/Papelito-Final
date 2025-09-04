@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Webhook } from 'svix';
 import { headers } from 'next/headers';
-import { addUserCredits } from '../credits/route';
+import { addUserCredits } from '../../credits/route';
 
 export async function POST(request: NextRequest) {
   try {
