@@ -23,12 +23,6 @@ export default function ColorizationApp() {
   const maxFileSize = 20 * 1024 * 1024; // 20MB (API limit)
   const maxPixels = 20 * 1024 * 1024; // 20 megapixels (API limit)
 
-  // Load user credits on component mount
-  useEffect(() => {
-    loadUserCredits();
-    analytics.appOpened(); // Track when user opens the app
-  }, []);
-
   const loadUserCredits = async () => {
     try {
       // Generate a simple user ID based on browser fingerprint
@@ -83,6 +77,12 @@ export default function ColorizationApp() {
     
     return userId;
   };
+
+  // Load user credits on component mount
+  useEffect(() => {
+    loadUserCredits();
+    analytics.appOpened(); // Track when user opens the app
+  }, []);
 
   const deductCredit = async () => {
     try {
@@ -312,12 +312,12 @@ export default function ColorizationApp() {
       setError(error instanceof Error ? error.message : 'An error occurred during colorization');
       
       // Track error
-      analytics.errorOccurred('colorization_failed', error instanceof Error ? error.message : 'Unknown error');
+      analytics.errorOccurred('colorization_failed');
     } finally {
       setIsProcessing(false);
       setProcessingStatus('');
     }
-  }, [selectedFile, previewUrl, prompt, userCredits, pollForResults, deductCredit]);
+  }, [selectedFile, previewUrl, prompt, userCredits, pollForResults, deductCredit, fileToBase64]);
 
   const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();

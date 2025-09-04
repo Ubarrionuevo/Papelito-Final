@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     // Create webhook instance
     const wh = new Webhook(webhookSecret);
 
-    let evt: any;
+    let evt: { type: string; data: any };
 
     try {
       // Verify the webhook
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
 }
 
 // Event handlers
-async function handleOrderCreated(data: any) {
+async function handleOrderCreated(data: { id: string; customer_id: string; amount: number; currency: string; status: string; customer?: { email?: string; id?: string; customer_id?: string } }) {
   console.log('🛒 Order created:', {
     orderId: data.id,
     customerId: data.customer_id,
@@ -120,7 +120,7 @@ async function handleOrderCreated(data: any) {
   }
 }
 
-async function handleOrderUpdated(data: any) {
+async function handleOrderUpdated(data: { id: string; status: string }) {
   console.log('🛒 Order updated:', {
     orderId: data.id,
     status: data.status
@@ -129,7 +129,7 @@ async function handleOrderUpdated(data: any) {
   // TODO: Handle order status changes
 }
 
-async function handleSubscriptionCreated(data: any) {
+async function handleSubscriptionCreated(data: { id: string; customer_id: string; status: string; product_id: string }) {
   console.log('📋 Subscription created:', {
     subscriptionId: data.id,
     customerId: data.customer_id,
@@ -143,7 +143,7 @@ async function handleSubscriptionCreated(data: any) {
   // - Send confirmation email
 }
 
-async function handleSubscriptionUpdated(data: any) {
+async function handleSubscriptionUpdated(data: { id: string; status: string }) {
   console.log('📋 Subscription updated:', {
     subscriptionId: data.id,
     status: data.status
@@ -152,7 +152,7 @@ async function handleSubscriptionUpdated(data: any) {
   // TODO: Handle subscription changes
 }
 
-async function handleSubscriptionCanceled(data: any) {
+async function handleSubscriptionCanceled(data: { id: string; customer_id: string }) {
   console.log('📋 Subscription canceled:', {
     subscriptionId: data.id,
     customerId: data.customer_id
@@ -164,7 +164,7 @@ async function handleSubscriptionCanceled(data: any) {
   // - Update user status
 }
 
-async function handlePaymentCompleted(data: any) {
+async function handlePaymentCompleted(data: { id: string; order_id: string; amount: number; currency: string; customer?: { email?: string; id?: string; customer_id?: string } }) {
   console.log('💳 Payment completed:', {
     paymentId: data.id,
     orderId: data.order_id,
@@ -192,7 +192,7 @@ async function handlePaymentCompleted(data: any) {
   }
 }
 
-async function handlePaymentFailed(data: any) {
+async function handlePaymentFailed(data: { id: string; order_id: string; failure_reason?: string }) {
   console.log('💳 Payment failed:', {
     paymentId: data.id,
     orderId: data.order_id,
@@ -221,7 +221,7 @@ function getPlanFromAmount(amount: number): { plan: string | null; credits: numb
 }
 
 // Helper function to get user ID from customer data
-function getUserIdFromCustomer(customer: any): string | null {
+function getUserIdFromCustomer(customer?: { email?: string; id?: string; customer_id?: string }): string | null {
   // Try different possible fields for user identification
   if (customer?.email) {
     return customer.email;

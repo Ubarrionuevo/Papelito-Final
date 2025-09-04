@@ -1,7 +1,7 @@
 // Simple analytics utility for Google Analytics
 declare global {
   interface Window {
-    gtag: (...args: any[]) => void;
+    gtag: (command: string, targetId: string, config?: Record<string, unknown>) => void;
   }
 }
 
@@ -63,7 +63,7 @@ export const analytics = {
   },
   
   // Error tracking
-  errorOccurred: (errorType: string, errorMessage?: string) => {
+  errorOccurred: (errorType: string) => {
     trackEvent('error_occurred', 'error', errorType, undefined);
   }
 };
