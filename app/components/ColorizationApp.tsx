@@ -673,12 +673,24 @@ export default function ColorizationApp() {
               {/* Action Buttons */}
               <div className="flex gap-3 justify-center">
                 <button
-                  onClick={() => {
-                    // Download colorized image
-                    const link = document.createElement('a');
-                    link.href = currentResult.colorized;
-                    link.download = 'colorized-image.jpg';
-                    link.click();
+                  onClick={async () => {
+                    try {
+                      // Download colorized image properly
+                      const response = await fetch(currentResult.colorized);
+                      const blob = await response.blob();
+                      const url = window.URL.createObjectURL(blob);
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.download = `colorized-image-${Date.now()}.jpg`;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      window.URL.revokeObjectURL(url);
+                    } catch (error) {
+                      console.error('Error downloading image:', error);
+                      // Fallback: open in new tab
+                      window.open(currentResult.colorized, '_blank');
+                    }
                   }}
                   className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2"
                 >
