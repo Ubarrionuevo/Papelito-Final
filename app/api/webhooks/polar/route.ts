@@ -114,6 +114,7 @@ async function handleOrderCreated(data: { id: string; customer_id: string; amoun
       console.log(`🎉 Order created: Activated ${credits} credits for user ${userId} (${plan} plan)`);
       
       // Track purchase completion (server-side)
+      const amountInDollars = data.amount / 100;
       console.log(`📊 Analytics: Purchase completed - ${plan} plan ($${amountInDollars})`);
     } else {
       console.log('❌ Could not determine user ID for order:', data.id);
