@@ -12,6 +12,7 @@ import Header from "./components/Header";
 import PricingCard from "./components/PricingCard";
 import SmoothScroll from "./components/SmoothScroll";
 import HeroTransformation from "./components/HeroTransformation";
+import { analytics } from "./utils/analytics";
 
 export default function Home() {
   const plans = [
@@ -173,7 +174,10 @@ export default function Home() {
             <p className="text-xl text-gray-600">Perfect for designers and creative professionals.</p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div 
+            className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto"
+            onMouseEnter={() => analytics.pricingViewed()}
+          >
             {plans.map((plan, index) => (
               <PricingCard
                 key={plan.title}

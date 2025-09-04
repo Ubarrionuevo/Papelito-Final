@@ -3,6 +3,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { ColorizationResult } from '../../types/api';
+import { analytics } from '../utils/analytics';
 
 export default function ColorizationApp() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -25,6 +26,7 @@ export default function ColorizationApp() {
   // Load user credits on component mount
   useEffect(() => {
     loadUserCredits();
+    analytics.appOpened(); // Track when user opens the app
   }, []);
 
   const loadUserCredits = async () => {
@@ -38,6 +40,11 @@ export default function ColorizationApp() {
         setUserCredits(data.credits);
         setUserPlan(data.plan);
         console.log(`📊 User credits loaded: ${data.credits} credits (${data.plan} plan)`);
+        
+        // Track free trial usage
+        if (data.plan === 'free' && data.credits === 1) {
+          analytics.freeTrialUsed();
+        }
       }
     } catch (error) {
       console.error('Failed to load user credits:', error);
@@ -96,6 +103,9 @@ export default function ColorizationApp() {
         const data = await response.json();
         setUserCredits(data.credits);
         console.log(`💳 Credit deducted. Remaining: ${data.credits}`);
+        
+        // Track credit usage
+        analytics.creditUsed(data.credits);
       } else {
         console.error('Failed to deduct credit');
       }
@@ -241,6 +251,9 @@ export default function ColorizationApp() {
     setIsProcessing(true);
     setError(null);
     setProcessingStatus('Converting image...');
+    
+    // Track colorization start
+    analytics.colorizationStarted();
 
     try {
       // Convert file to base64
@@ -290,10 +303,16 @@ export default function ColorizationApp() {
         // Deduct 1 credit after successful processing
         await deductCredit();
         setProcessingStatus('Complete!');
+        
+        // Track successful colorization
+        analytics.colorizationCompleted();
       }
     } catch (error) {
       console.error('Colorization error:', error);
       setError(error instanceof Error ? error.message : 'An error occurred during colorization');
+      
+      // Track error
+      analytics.errorOccurred('colorization_failed', error instanceof Error ? error.message : 'Unknown error');
     } finally {
       setIsProcessing(false);
       setProcessingStatus('');

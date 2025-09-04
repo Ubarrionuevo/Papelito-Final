@@ -111,6 +111,9 @@ async function handleOrderCreated(data: any) {
     if (userId) {
       addUserCredits(userId, credits, plan, data.customer?.email);
       console.log(`🎉 Order created: Activated ${credits} credits for user ${userId} (${plan} plan)`);
+      
+      // Track purchase completion (server-side)
+      console.log(`📊 Analytics: Purchase completed - ${plan} plan ($${amountInDollars})`);
     } else {
       console.log('❌ Could not determine user ID for order:', data.id);
     }
@@ -179,6 +182,10 @@ async function handlePaymentCompleted(data: any) {
     if (userId) {
       addUserCredits(userId, credits, plan, data.customer?.email);
       console.log(`🎉 Payment completed: Activated ${credits} credits for user ${userId} (${plan} plan)`);
+      
+      // Track purchase completion (server-side)
+      const amountInDollars = data.amount / 100;
+      console.log(`📊 Analytics: Purchase completed - ${plan} plan ($${amountInDollars})`);
     } else {
       console.log('❌ Could not determine user ID for payment:', data.id);
     }

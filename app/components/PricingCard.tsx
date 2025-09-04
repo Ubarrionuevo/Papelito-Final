@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Check, Star, Crown, ArrowRight } from "lucide-react";
+import { analytics } from "../utils/analytics";
 
 interface PricingCardProps {
   title: string;
@@ -97,6 +98,7 @@ export default function PricingCard({
           rel="noopener noreferrer"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
+          onClick={() => analytics.purchaseInitiated('starter', 5)}
           className="w-full py-3 rounded-full font-bold transition-all duration-200 bg-orange-500 hover:bg-orange-600 text-white shadow-lg hover:shadow-xl"
         >
           <div className="flex items-center justify-center gap-2">
@@ -111,6 +113,7 @@ export default function PricingCard({
           rel="noopener noreferrer"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
+          onClick={() => analytics.purchaseInitiated('professional', 10)}
           className="w-full py-3 rounded-full font-bold transition-all duration-200 bg-blue-500 hover:bg-blue-600 text-white shadow-lg hover:shadow-xl"
         >
           <div className="flex items-center justify-center gap-2">
