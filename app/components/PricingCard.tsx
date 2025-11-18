@@ -2,6 +2,11 @@ import { motion } from "framer-motion";
 import { Check, Star, Crown, ArrowRight } from "lucide-react";
 import { analytics } from "../utils/analytics";
 
+const CHECKOUT_LINKS: Record<string, string> = {
+  Starter: "https://sketch1.lemonsqueezy.com/buy/55e5a62d-ee89-492c-a5d4-d325e337ae0f",
+  Professional: "https://sketch1.lemonsqueezy.com/buy/928a9c0e-e29e-45fc-90d5-3c7c50cf4d75",
+};
+
 interface PricingCardProps {
   title: string;
   price: string;
@@ -27,6 +32,8 @@ export default function PricingCard({
   popular = false,
   index
 }: PricingCardProps) {
+  const checkoutLink = CHECKOUT_LINKS[title] || "#";
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -93,7 +100,7 @@ export default function PricingCard({
       {/* CTA Button */}
       {title === "Starter" ? (
         <motion.a
-          href="https://buy.polar.sh/polar_cl_j9AjecF4Y3cJGkt8IMTonXo7LOieC7cVkK16K1ZHqDC"
+          href={checkoutLink}
           target="_blank"
           rel="noopener noreferrer"
           whileHover={{ scale: 1.02 }}
@@ -108,7 +115,7 @@ export default function PricingCard({
         </motion.a>
       ) : title === "Professional" ? (
         <motion.a
-          href="https://buy.polar.sh/polar_cl_TSIHrLY3B2zCK9K0iZfR9hYNSSzBtXKNgWeFn29xZNn"
+          href={checkoutLink}
           target="_blank"
           rel="noopener noreferrer"
           whileHover={{ scale: 1.02 }}
