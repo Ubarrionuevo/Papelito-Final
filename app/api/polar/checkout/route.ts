@@ -1,5 +1,5 @@
 import { Checkout } from "@polar-sh/nextjs";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 const accessToken = process.env.POLAR_ACCESS_TOKEN;
 
@@ -13,7 +13,7 @@ const checkoutHandler = accessToken
     })
   : null;
 
-export const GET = (request: Request) => {
+export const GET = (request: NextRequest) => {
   if (!checkoutHandler) {
     return NextResponse.json({ error: "Polar access token not configured" }, { status: 500 });
   }
