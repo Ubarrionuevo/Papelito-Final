@@ -40,9 +40,9 @@ export default function PricingCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.6, delay: index * 0.1 }}
-      className={`relative bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all duration-300 border ${
+      className={`relative bg-white rounded-2xl p-8 shadow-sm hover:shadow-lg transition-all duration-300 border ${
         popular 
-          ? 'border-orange-200 ring-2 ring-orange-100' 
+          ? 'border-gray-200 ring-1 ring-gray-100' 
           : 'border-gray-100 hover:border-gray-200'
       } group`}
       whileHover={{ y: -5 }}
@@ -55,8 +55,8 @@ export default function PricingCard({
           transition={{ delay: 0.3, type: "spring" }}
           className="absolute -top-3 left-1/2 transform -translate-x-1/2"
         >
-          <span className="bg-orange-500 text-black px-4 py-1 rounded-full text-sm font-medium shadow-lg">
-            Most Popular
+          <span className="bg-gray-100 text-gray-700 px-4 py-1 rounded-full text-sm font-medium">
+            Más Popular
           </span>
         </motion.div>
       )}
@@ -106,11 +106,11 @@ export default function PricingCard({
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => analytics.purchaseInitiated('starter', 5)}
-          className="w-full py-3 rounded-full font-bold transition-all duration-200 bg-orange-500 hover:bg-orange-600 text-white shadow-lg hover:shadow-xl"
+          className="w-full py-3 rounded-full font-semibold transition-all duration-200 bg-red-500 hover:bg-red-600 text-white shadow-md hover:shadow-lg"
         >
           <div className="flex items-center justify-center gap-2">
             <ArrowRight className="w-5 h-5" />
-            <span className="text-black">Get Started</span>
+            <span>Get Started</span>
           </div>
         </motion.a>
       ) : title === "Professional" ? (
@@ -121,11 +121,11 @@ export default function PricingCard({
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => analytics.purchaseInitiated('professional', 10)}
-          className="w-full py-3 rounded-full font-bold transition-all duration-200 bg-blue-500 hover:bg-blue-600 text-white shadow-lg hover:shadow-xl"
+          className="w-full py-3 rounded-full font-semibold transition-all duration-200 bg-red-500 hover:bg-red-600 text-white shadow-md hover:shadow-lg"
         >
           <div className="flex items-center justify-center gap-2">
             <ArrowRight className="w-5 h-5" />
-            <span className="text-black">Get Started</span>
+            <span>Get Started</span>
           </div>
         </motion.a>
       ) : null}

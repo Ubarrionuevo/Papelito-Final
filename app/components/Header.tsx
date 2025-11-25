@@ -3,11 +3,9 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useState, useEffect } from "react";
 import { User, ChevronDown, Menu, X } from "lucide-react";
-import PricingModal from "./PricingModal";
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
-  const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
   const { scrollY } = useScroll();
   const backgroundColor = useTransform(scrollY, [0, 100], ["rgba(255, 255, 255, 0)", "rgba(255, 255, 255, 0.95)"]);
   const backdropFilter = useTransform(scrollY, [0, 100], ["blur(0px)", "blur(20px)"]);
@@ -65,7 +63,7 @@ export default function Header() {
               Contact
             </a>
             <button 
-              onClick={() => setIsPricingModalOpen(true)}
+              onClick={() => window.location.href = '#pricing'}
               className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full font-medium transition-colors"
             >
               <User className="w-4 h-4" />
@@ -119,7 +117,7 @@ export default function Header() {
               </a>
               <button 
                 onClick={() => {
-                  setIsPricingModalOpen(true);
+                  window.location.href = '#pricing';
                   setIsOpen(false);
                 }}
                 className="w-full mt-4 flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full font-medium transition-colors"
@@ -132,12 +130,6 @@ export default function Header() {
           </motion.div>
         )}
       </div>
-      
-      {/* Pricing Modal */}
-      <PricingModal 
-        isOpen={isPricingModalOpen} 
-        onClose={() => setIsPricingModalOpen(false)} 
-      />
     </motion.header>
   );
 }
