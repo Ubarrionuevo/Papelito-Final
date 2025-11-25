@@ -390,16 +390,64 @@ export default function ColorizationApp() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-4 sm:p-6 lg:p-8">
-      {/* Header */}
-      <div className="max-w-4xl mx-auto mb-8">
-        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 text-center mb-4">
-          AI-Powered Image Colorization
-        </h1>
-        <p className="text-lg text-gray-600 text-center max-w-2xl mx-auto">
-          Transform your black and white sketches into vibrant, colored masterpieces using advanced artificial intelligence.
-        </p>
-      </div>
+    <div className="bg-gradient-to-br from-gray-50 to-white p-4 sm:p-6 lg:p-8">
+      {/* Credits Display - Prominente en la primera pantalla */}
+      {!isLoadingCredits && (
+        <div className="max-w-4xl mx-auto mb-6">
+          <div className={`rounded-2xl shadow-lg p-6 border-2 ${
+            userCredits > 0 
+              ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-300' 
+              : 'bg-yellow-50 border-yellow-300'
+          }`}>
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                  userCredits > 0 ? 'bg-green-100' : 'bg-yellow-100'
+                }`}>
+                  {userCredits > 0 ? (
+                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                  )}
+                </div>
+                <div>
+                  {userCredits > 0 ? (
+                    <>
+                      <p className="text-xl font-bold text-gray-900">
+                        You have {userCredits} free {userCredits === 1 ? 'credit' : 'credits'} available!
+                      </p>
+                      <p className="text-sm text-gray-700 mt-1">
+                        Upload your image and start colorizing right now
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-xl font-bold text-yellow-900">
+                        No credits available
+                      </p>
+                      <p className="text-sm text-yellow-700 mt-1">
+                        Purchase a plan to continue creating colorized images
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+              {userCredits === 0 && (
+                <button
+                  onClick={() => window.location.href = '/#pricing'}
+                  className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-md hover:shadow-lg"
+                >
+                  Buy Credits
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto space-y-8">
@@ -554,57 +602,6 @@ export default function ColorizationApp() {
           </div>
         )}
 
-        {/* Credits Display */}
-        {!isLoadingCredits && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-blue-900">
-                    {userCredits} {userCredits === 1 ? 'Credit' : 'Credits'} Available
-                  </p>
-                  <p className="text-xs text-blue-700 capitalize">
-                    {userPlan} Plan
-                  </p>
-                </div>
-              </div>
-              {userCredits === 0 && (
-                <button
-                  onClick={() => window.location.href = '/#pricing'}
-                  className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                >
-                  Buy Credits
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* If user has no credits, show blocked message */}
-        {!isLoadingCredits && userCredits <= 0 && !showResultModal && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center">
-            <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold text-yellow-900 mb-2">No Credits Remaining!</h3>
-            <p className="text-yellow-700 mb-4">
-              You&apos;ve used all your available credits. Purchase a plan to continue creating amazing colored images!
-            </p>
-            <button
-              onClick={() => window.location.href = '/#pricing'}
-              className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-            >
-              View Pricing Plans
-            </button>
-          </div>
-        )}
 
         {/* Process Button */}
         {!isLoadingCredits && userCredits > 0 && selectedFile && previewUrl && (
@@ -612,16 +609,42 @@ export default function ColorizationApp() {
             <button
               onClick={processImage}
               disabled={isProcessing}
-              className="bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white px-8 py-3 rounded-full font-bold text-lg transition-colors shadow-lg hover:shadow-xl disabled:cursor-not-allowed"
+              className="bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white px-10 py-4 rounded-full font-bold text-xl transition-all shadow-xl hover:shadow-2xl disabled:cursor-not-allowed transform hover:scale-105 disabled:transform-none"
             >
               {isProcessing ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Processing...
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Processing...</span>
                 </div>
               ) : (
-                'Colorize Image'
+                <span className="flex items-center gap-2">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                  </svg>
+                  Colorize Image Now
+                </span>
               )}
+            </button>
+            <p className="text-sm text-gray-600 mt-3">
+              You will use 1 credit out of {userCredits} available
+            </p>
+          </div>
+        )}
+        
+        {/* Message when no credits but image is selected */}
+        {!isLoadingCredits && userCredits <= 0 && selectedFile && previewUrl && (
+          <div className="text-center bg-yellow-50 border-2 border-yellow-300 rounded-xl p-6">
+            <p className="text-lg font-semibold text-yellow-900 mb-2">
+              No credits available
+            </p>
+            <p className="text-yellow-700 mb-4">
+              Purchase credits to colorize this image
+            </p>
+            <button
+              onClick={() => window.location.href = '/#pricing'}
+              className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+            >
+              View Plans and Pricing
             </button>
           </div>
         )}
