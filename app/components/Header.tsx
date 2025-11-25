@@ -3,9 +3,11 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useState, useEffect } from "react";
 import { User, ChevronDown, Menu, X } from "lucide-react";
+import PricingModal from "./PricingModal";
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
   const { scrollY } = useScroll();
   const backgroundColor = useTransform(scrollY, [0, 100], ["rgba(255, 255, 255, 0)", "rgba(255, 255, 255, 0.95)"]);
   const backdropFilter = useTransform(scrollY, [0, 100], ["blur(0px)", "blur(20px)"]);
@@ -62,11 +64,14 @@ export default function Header() {
             <a href="#contact" className="text-gray-700 hover:text-orange-500 transition-colors font-medium">
               Contact
             </a>
-            <a href="/colorize" className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full font-medium transition-colors">
+            <button 
+              onClick={() => setIsPricingModalOpen(true)}
+              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full font-medium transition-colors"
+            >
               <User className="w-4 h-4" />
               Get Started
               <ChevronDown className="w-4 h-4" />
-            </a>
+            </button>
           </motion.nav>
 
           {/* Mobile menu button */}
@@ -112,15 +117,27 @@ export default function Header() {
               >
                 Contact
               </a>
-              <a href="/colorize" className="w-full mt-4 flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full font-medium transition-colors">
+              <button 
+                onClick={() => {
+                  setIsPricingModalOpen(true);
+                  setIsOpen(false);
+                }}
+                className="w-full mt-4 flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full font-medium transition-colors"
+              >
                 <User className="w-4 h-4" />
                 Get Started
                 <ChevronDown className="w-4 h-4" />
-              </a>
+              </button>
             </div>
           </motion.div>
         )}
       </div>
+      
+      {/* Pricing Modal */}
+      <PricingModal 
+        isOpen={isPricingModalOpen} 
+        onClose={() => setIsPricingModalOpen(false)} 
+      />
     </motion.header>
   );
 }
