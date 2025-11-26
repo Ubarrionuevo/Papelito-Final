@@ -98,37 +98,22 @@ export default function PricingCard({
       </ul>
 
       {/* CTA Button */}
-      {title === "Starter" ? (
-        <motion.a
-          href={checkoutLink}
-          target="_blank"
-          rel="noopener noreferrer"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => analytics.purchaseInitiated('starter', 5)}
-          className="w-full py-3 rounded-full font-semibold transition-all duration-200 bg-red-500 hover:bg-red-600 text-white shadow-md hover:shadow-lg"
-        >
-          <div className="flex items-center justify-center gap-2">
-            <ArrowRight className="w-5 h-5" />
-            <span>Get Started</span>
-          </div>
-        </motion.a>
-      ) : title === "Professional" ? (
-        <motion.a
-          href={checkoutLink}
-          target="_blank"
-          rel="noopener noreferrer"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => analytics.purchaseInitiated('professional', 10)}
-          className="w-full py-3 rounded-full font-semibold transition-all duration-200 bg-red-500 hover:bg-red-600 text-white shadow-md hover:shadow-lg"
-        >
-          <div className="flex items-center justify-center gap-2">
-            <ArrowRight className="w-5 h-5" />
-            <span>Get Started</span>
-          </div>
-        </motion.a>
-      ) : null}
+      <motion.a
+        href={checkoutLink}
+        target="_blank"
+        rel="noopener noreferrer"
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={() => {
+          const planType = title.toLowerCase();
+          const priceValue = parseInt(price.replace('$', '')) || 10;
+          analytics.purchaseInitiated(planType, priceValue);
+        }}
+        className="w-full py-3 rounded-full font-semibold transition-all duration-200 bg-red-500 hover:bg-red-600 text-white shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+      >
+        <ArrowRight className="w-5 h-5" />
+        <span>Get Started</span>
+      </motion.a>
 
       {/* Decorative elements */}
       <div className="absolute top-4 right-4 opacity-10">
