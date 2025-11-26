@@ -13,7 +13,6 @@ export default function ColorizationApp() {
   const [error, setError] = useState<string | null>(null);
   const [prompt, setPrompt] = useState<string>('Apply realistic, natural colors to this sketch while maintaining the original style and details');
   const [userCredits, setUserCredits] = useState<number>(0);
-  const [userPlan, setUserPlan] = useState<string>('free');
   const [isLoadingCredits, setIsLoadingCredits] = useState(true);
   const [processingStatus, setProcessingStatus] = useState<string>('');
   const [showResultModal, setShowResultModal] = useState(false);
@@ -32,7 +31,6 @@ export default function ColorizationApp() {
       if (response.ok) {
         const data = await response.json();
         setUserCredits(data.credits);
-        setUserPlan(data.plan);
         console.log(`📊 User credits loaded: ${data.credits} credits (${data.plan} plan)`);
         
         // Track free trial usage
@@ -44,7 +42,6 @@ export default function ColorizationApp() {
       console.error('Failed to load user credits:', error);
       // Fallback to free plan
       setUserCredits(1);
-      setUserPlan('free');
     } finally {
       setIsLoadingCredits(false);
     }
@@ -698,17 +695,13 @@ export default function ColorizationApp() {
                   <h4 className="font-medium text-gray-900 mb-3 text-center">Colorized Result</h4>
                   <div className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-lg p-2 border-2 border-orange-200">
                     {currentResult.colorized ? (
-                      <img
+                      <Image
                         src={currentResult.colorized}
                         alt="Colorized"
+                        width={400}
+                        height={400}
                         className="rounded-lg object-contain w-full h-auto max-h-96"
-                        onError={(e) => {
-                          console.error('❌ Error loading colorized image:', currentResult.colorized);
-                          console.error('Image error:', e);
-                        }}
-                        onLoad={() => {
-                          console.log('✅ Colorized image loaded successfully:', currentResult.colorized);
-                        }}
+                        unoptimized
                       />
                     ) : (
                       <div className="flex items-center justify-center h-64 bg-gray-100 rounded-lg">

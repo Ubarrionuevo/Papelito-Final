@@ -1,6 +1,8 @@
-# 🎨 Sketcha - Colorización Inteligente de Bocetos
+# 🚀 Template Base - Landing Page Moderna
 
-Una landing page moderna y elegante para un servicio de colorización de bocetos con inteligencia artificial, construida con Next.js 15, TypeScript, Tailwind CSS 4 y Framer Motion.
+**Este es un template base reutilizable** para crear landing pages profesionales y modernas. Diseñado para ser copiado, modificado y adaptado para cualquier tipo de producto o servicio.
+
+Construido con Next.js 15, TypeScript, Tailwind CSS 4 y Framer Motion.
 
 ## ✨ Características
 
@@ -102,19 +104,22 @@ La aplicación está completamente optimizada para:
 
 ## 🔧 Personalización
 
-### Colores
-Los colores se pueden personalizar en `app/globals.css` modificando las variables CSS:
+### Guías de Personalización
 
-```css
-:root {
-  --primary: #ff6b35;        /* Color principal */
-  --secondary: #4ade80;      /* Color secundario */
-  --accent: #3b82f6;        /* Color de acento */
-}
-```
+Este template incluye guías completas para personalización:
 
-### Contenido
-El contenido se puede modificar directamente en `app/page.tsx` en los arrays `examples` y `plans`.
+- **[TEMPLATE_GUIDE.md](./TEMPLATE_GUIDE.md)** - Guía completa de reutilización
+- **[QUICK_START.md](./QUICK_START.md)** - Configuración rápida en 10 minutos
+- **[PROJECT_CONFIG.md](./PROJECT_CONFIG.md)** - Documentación de todas las áreas configurables
+
+### Personalización Rápida
+
+1. **Colores**: Modificar variables CSS en `app/globals.css`
+2. **Contenido**: Actualizar textos en `app/page.tsx` y componentes
+3. **Imágenes**: Reemplazar archivos en `/public/IMG/`
+4. **Metadata**: Cambiar título y descripción en `app/layout.tsx`
+
+Ver [QUICK_START.md](./QUICK_START.md) para configuración en 5 minutos.
 
 ## 📈 Performance
 
@@ -138,15 +143,35 @@ El contenido se puede modificar directamente en `app/page.tsx` en los arrays `ex
 4. Push a la rama (`git push origin feature/AmazingFeature`)
 5. Abre un Pull Request
 
+## 📚 Documentación Adicional
+
+- **[TEMPLATE_GUIDE.md](./TEMPLATE_GUIDE.md)** - Guía completa de reutilización del template
+- **[QUICK_START.md](./QUICK_START.md)** - Configuración rápida paso a paso
+- **[PROJECT_CONFIG.md](./PROJECT_CONFIG.md)** - Referencia completa de configuración
+
+## 🎯 Uso como Template Base
+
+Este proyecto está diseñado para ser tu **pipeline de código base**. 
+
+### Proceso de Reutilización:
+1. Copiar el proyecto completo
+2. Seguir el checklist en [TEMPLATE_GUIDE.md](./TEMPLATE_GUIDE.md)
+3. Personalizar según tu proyecto específico
+4. Adaptar funcionalidad según necesidad
+
+### Características del Template:
+- ✅ Estructura modular y reutilizable
+- ✅ Componentes independientes
+- ✅ Fácil personalización de colores y contenido
+- ✅ Sistema de animaciones listo para usar
+- ✅ Responsive design incluido
+- ✅ SEO optimizado
+- ✅ Performance optimizado
+
 ## 📄 Licencia
 
-Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
-
-## 📞 Contacto
-
-- **Proyecto**: [Sketcha Landing Page](https://github.com/tu-usuario/sketcha)
-- **Issues**: [GitHub Issues](https://github.com/tu-usuario/sketcha/issues)
+Este proyecto está bajo la Licencia MIT. Úsalo libremente para tus proyectos.
 
 ---
 
-**Sketcha** - Transformando bocetos en obras maestras con inteligencia artificial 🎨✨
+**Template Base** - Tu punto de partida para landing pages profesionales 🚀✨

@@ -4,8 +4,6 @@ import { motion } from "framer-motion";
 import { 
   Check, 
   Star, 
-  Loader2, 
-  ArrowRight, 
   Send
 } from "lucide-react";
 import Header from "./components/Header";
@@ -133,7 +131,7 @@ export default function Home() {
               Get in Touch
             </h2>
             <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto">
-              Have questions or feedback? We'd love to hear from you. Send us an email and we'll get back to you as soon as possible.
+              Have questions or feedback? We&apos;d love to hear from you. Send us an email and we&apos;ll get back to you as soon as possible.
             </p>
 
             <motion.div
