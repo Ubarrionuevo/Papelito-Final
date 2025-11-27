@@ -79,3 +79,10 @@ export interface DocumentSearchRequest {
   offset?: number;
 }
 
+export interface ColorizeRequest {
+  prompt: string;
+  input_image: string; // base64 encoded image
+  aspect_ratio?: string;
+  output_format?: string;
+}
+
