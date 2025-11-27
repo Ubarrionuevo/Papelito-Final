@@ -2,12 +2,10 @@
 
 import { motion } from "framer-motion";
 import { 
-  Check, 
   Star, 
   Send,
   FileText,
-  Search,
-  Folder
+  Search
 } from "lucide-react";
 import Header from "./components/Header";
 import HeroDocumentScanner from "./components/HeroDocumentScanner";

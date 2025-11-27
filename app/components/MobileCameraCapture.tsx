@@ -13,7 +13,6 @@ export default function MobileCameraCapture({ onCapture, onClose }: MobileCamera
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const [isStreaming, setIsStreaming] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
 
@@ -30,7 +29,6 @@ export default function MobileCameraCapture({ onCapture, onClose }: MobileCamera
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         streamRef.current = stream;
-        setIsStreaming(true);
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
@@ -42,7 +40,6 @@ export default function MobileCameraCapture({ onCapture, onClose }: MobileCamera
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
-      setIsStreaming(false);
     }
   }, []);
 
@@ -70,7 +67,6 @@ export default function MobileCameraCapture({ onCapture, onClose }: MobileCamera
     canvas.toBlob((blob) => {
       if (!blob) return;
       
-      const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
       const imageUrl = URL.createObjectURL(blob);
       setCapturedImage(imageUrl);
       stopCamera();

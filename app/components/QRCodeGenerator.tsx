@@ -58,6 +58,7 @@ export default function QRCodeGenerator({ url, onClose }: QRCodeGeneratorProps) 
         <div className="flex justify-center mb-6">
           {qrDataUrl ? (
             <div className="bg-white p-4 rounded-xl border-4 border-gray-200">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={qrDataUrl}
                 alt="QR Code"
@@ -104,7 +105,7 @@ export default function QRCodeGenerator({ url, onClose }: QRCodeGeneratorProps) 
             <li>Abre la cámara de tu celular o una app para escanear QR</li>
             <li>Escanea este código QR</li>
             <li>Se abrirá la aplicación en tu celular</li>
-            <li>Usa el botón "Tomar Foto" para capturar documentos</li>
+            <li>Usa el botón &quot;Tomar Foto&quot; para capturar documentos</li>
           </ol>
         </div>
 

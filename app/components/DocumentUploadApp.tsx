@@ -87,7 +87,7 @@ export default function DocumentUploadApp() {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
-  }, [loadUserCredits]);
+  }, [loadUserCredits, loadDocuments]);
 
   const loadDocuments = useCallback(async () => {
     try {

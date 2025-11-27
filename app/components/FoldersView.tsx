@@ -9,7 +9,7 @@ interface FoldersViewProps {
   onDocumentClick?: (doc: Document) => void;
 }
 
-export default function FoldersView({ documents, onDocumentClick }: FoldersViewProps) {
+export default function FoldersView({ documents }: FoldersViewProps) {
   // Organizar documentos por categorías
   const organizeByCategory = () => {
     const organized: {

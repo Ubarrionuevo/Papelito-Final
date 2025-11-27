@@ -2,7 +2,8 @@
 
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useState, useEffect } from "react";
-import { User, ChevronDown, Menu, X } from "lucide-react";
+import { User, Menu, X } from "lucide-react";
+import Link from "next/link";
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
@@ -53,12 +54,12 @@ export default function Header() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="hidden lg:flex items-center space-x-8"
           >
-            <a href="/" className="text-gray-700 hover:text-indigo-600 transition-colors font-medium">
+            <Link href="/" className="text-gray-700 hover:text-indigo-600 transition-colors font-medium">
               Inicio
-            </a>
-            <a href="/documents" className="text-gray-700 hover:text-indigo-600 transition-colors font-medium">
+            </Link>
+            <Link href="/documents" className="text-gray-700 hover:text-indigo-600 transition-colors font-medium">
               Documentos
-            </a>
+            </Link>
             <a href="#pricing" className="text-gray-700 hover:text-indigo-600 transition-colors font-medium">
               Precios
             </a>
@@ -96,20 +97,20 @@ export default function Header() {
             className="lg:hidden border-t border-gray-200 bg-white/95 backdrop-blur-md"
           >
             <div className="px-2 pt-2 pb-3 space-y-1">
-              <a
+              <Link
                 href="/"
                 className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
                 onClick={() => setIsOpen(false)}
               >
                 Inicio
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/documents"
                 className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
                 onClick={() => setIsOpen(false)}
               >
                 Documentos
-              </a>
+              </Link>
               <a
                 href="#pricing"
                 className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"

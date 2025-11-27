@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Image from "next/image";
 import { useState, useEffect } from "react";
 import { FileText, CheckCircle, Search, Folder } from "lucide-react";
 

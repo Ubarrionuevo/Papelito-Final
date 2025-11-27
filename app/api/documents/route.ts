@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Document, DocumentRequest, DocumentsListResponse, DocumentSearchRequest } from '../../../types/api';
+import { Document, DocumentRequest } from '../../../types/api';
 
 // In-memory storage for demo purposes
 // In production, you should use a database (PostgreSQL, MongoDB, etc.)

@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Image from "next/image";
 import { FileText, Calendar, DollarSign, Building2 } from "lucide-react";
 
 export default function DocumentsExamplesGallery() {

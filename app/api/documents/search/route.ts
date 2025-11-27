@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DocumentSearchRequest, DocumentsListResponse } from '../../../../types/api';
+import { DocumentSearchRequest, Document } from '../../../../types/api';
 import { documents } from '../route';
 
 export async function POST(request: NextRequest) {
@@ -17,12 +17,12 @@ export async function POST(request: NextRequest) {
     // Get all documents from the shared storage
     // In production, this would be a database query
     let userDocuments = Array.from(documents.values())
-      .filter((doc: any) => doc.userId === userId);
+      .filter((doc: Document) => doc.userId === userId);
 
     // Text search
     if (query) {
       const searchQuery = query.toLowerCase();
-      userDocuments = userDocuments.filter((doc: any) => {
+      userDocuments = userDocuments.filter((doc: Document) => {
         return (
           doc.text?.toLowerCase().includes(searchQuery) ||
           doc.metadata.provider?.toLowerCase().includes(searchQuery) ||
@@ -35,32 +35,32 @@ export async function POST(request: NextRequest) {
 
     // Filter by metadata
     if (type) {
-      userDocuments = userDocuments.filter((doc: any) => 
+      userDocuments = userDocuments.filter((doc: Document) => 
         doc.metadata.type === type || doc.classification.documentType === type
       );
     }
 
     if (provider) {
-      userDocuments = userDocuments.filter((doc: any) => 
+      userDocuments = userDocuments.filter((doc: Document) => 
         doc.metadata.provider?.toLowerCase().includes(provider.toLowerCase()) ||
         doc.classification.provider?.toLowerCase().includes(provider.toLowerCase())
       );
     }
 
     if (project) {
-      userDocuments = userDocuments.filter((doc: any) => 
+      userDocuments = userDocuments.filter((doc: Document) => 
         doc.classification.project?.toLowerCase().includes(project.toLowerCase())
       );
     }
 
     if (month) {
-      userDocuments = userDocuments.filter((doc: any) => 
+      userDocuments = userDocuments.filter((doc: Document) => 
         doc.classification.month === month
       );
     }
 
     if (year) {
-      userDocuments = userDocuments.filter((doc: any) => 
+      userDocuments = userDocuments.filter((doc: Document) => 
         doc.classification.year === year
       );
     }
@@ -68,14 +68,14 @@ export async function POST(request: NextRequest) {
     // Sort by relevance (if query) or by date
     if (query) {
       // Simple relevance: documents with query in text come first
-      userDocuments.sort((a: any, b: any) => {
+      userDocuments.sort((a: Document, b: Document) => {
         const aRelevance = a.text?.toLowerCase().includes(query.toLowerCase()) ? 1 : 0;
         const bRelevance = b.text?.toLowerCase().includes(query.toLowerCase()) ? 1 : 0;
         return bRelevance - aRelevance;
       });
     } else {
       // Sort by createdAt (newest first)
-      userDocuments.sort((a: any, b: any) => 
+      userDocuments.sort((a: Document, b: Document) => 
         b.createdAt.getTime() - a.createdAt.getTime()
       );
     }
