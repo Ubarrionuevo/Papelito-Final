@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sketcha - Colorización Inteligente de Bocetos",
-  description: "Lleva tus bocetos a la vida con colorización inteligente. Perfecto para diseñadores, ilustradores y profesionales creativos.",
+  title: "Papelito - Digitaliza y Organiza tus Documentos",
+  description: "Micro-SaaS para digitalizar facturas, remitos, presupuestos y contratos. OCR automático, clasificación inteligente y búsqueda instantánea.",
 };
 
 export default function RootLayout({

@@ -40,10 +40,10 @@ export default function PricingCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.6, delay: index * 0.1 }}
-      className={`relative bg-white rounded-2xl p-8 shadow-sm hover:shadow-lg transition-all duration-300 border ${
+      className={`relative bg-gradient-to-br from-white via-indigo-50/20 to-purple-50/20 rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border-2 ${
         popular 
-          ? 'border-gray-200 ring-1 ring-gray-100' 
-          : 'border-gray-100 hover:border-gray-200'
+          ? 'border-indigo-300 ring-2 ring-indigo-100' 
+          : 'border-indigo-100 hover:border-indigo-200'
       } group`}
       whileHover={{ y: -5 }}
     >
@@ -55,7 +55,7 @@ export default function PricingCard({
           transition={{ delay: 0.3, type: "spring" }}
           className="absolute -top-3 left-1/2 transform -translate-x-1/2"
         >
-          <span className="bg-gray-100 text-gray-700 px-4 py-1 rounded-full text-sm font-medium">
+          <span className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-1 rounded-full text-sm font-medium shadow-md">
             Más Popular
           </span>
         </motion.div>
@@ -89,8 +89,8 @@ export default function PricingCard({
             transition={{ delay: 0.4 + featureIndex * 0.1 }}
             className="flex items-center gap-3"
           >
-            <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <Check className="w-3 h-3 text-green-600" />
+            <div className="w-5 h-5 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <Check className="w-3 h-3 text-emerald-600" />
             </div>
             <span className="text-black">{feature}</span>
           </motion.li>
@@ -118,9 +118,9 @@ export default function PricingCard({
       {/* Decorative elements */}
       <div className="absolute top-4 right-4 opacity-10">
         {popular ? (
-          <Crown className="w-8 h-8 text-orange-500" />
+          <Crown className="w-8 h-8 text-indigo-500" />
         ) : (
-          <Star className="w-8 h-8 text-gray-400" />
+          <Star className="w-8 h-8 text-indigo-300" />
         )}
       </div>
     </motion.div>

@@ -5,7 +5,7 @@ Usa este checklist para personalizar el template en cada nuevo proyecto.
 ## 📋 Información Básica
 
 ### Metadata y Configuración
-- [ ] `app/layout.tsx` - Cambiar `title` en metadata
+- [ ] `app/layout.tsx` - Cambiar `title` en nn
 - [ ] `app/layout.tsx` - Cambiar `description` en metadata
 - [ ] `app/layout.tsx` - Actualizar Google Analytics ID (línea 31)
 - [ ] `app/layout.tsx` - Cambiar `lang` del HTML si es necesario (línea 27)
@@ -153,5 +153,6 @@ Usa este checklist para personalizar el template en cada nuevo proyecto.
 ---
 
 **Una vez completado este checklist, tu proyecto estará personalizado y listo para usar! 🎉**
+
 
 

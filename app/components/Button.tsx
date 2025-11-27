@@ -25,11 +25,11 @@ export default function Button({
   const baseClasses = "inline-flex items-center justify-center gap-2 font-medium rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
   
   const variants = {
-    primary: "bg-orange-500 hover:bg-orange-600 text-white focus:ring-orange-500 shadow-sm hover:shadow-md",
-    secondary: "bg-green-500 hover:bg-green-600 text-white focus:ring-green-500 shadow-sm hover:shadow-md",
-    accent: "bg-blue-500 hover:bg-blue-600 text-white focus:ring-blue-500 shadow-sm hover:shadow-md",
-    outline: "border-2 border-gray-300 hover:border-gray-400 text-gray-700 hover:bg-gray-50 focus:ring-gray-500",
-    ghost: "bg-gray-100 hover:bg-gray-200 text-gray-700 focus:ring-gray-500"
+    primary: "bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white focus:ring-indigo-500 shadow-md hover:shadow-lg",
+    secondary: "bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white focus:ring-emerald-500 shadow-md hover:shadow-lg",
+    accent: "bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white focus:ring-purple-500 shadow-md hover:shadow-lg",
+    outline: "border-2 border-indigo-200 hover:border-indigo-400 text-indigo-600 hover:bg-indigo-50 focus:ring-indigo-500 bg-white",
+    ghost: "bg-indigo-50 hover:bg-indigo-100 text-indigo-700 focus:ring-indigo-500"
   };
   
   const sizes = {

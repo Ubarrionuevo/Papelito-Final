@@ -100,3 +100,4 @@ app/
 **¡Listo! Tu proyecto base está configurado. Ahora personaliza según tu necesidad específica.**
 
 
+

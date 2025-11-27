@@ -201,3 +201,4 @@ Cada componente está diseñado para ser independiente y fácilmente modificable
 **Este template está diseñado para ser tu punto de partida. Modifícalo, adáptalo y hazlo tuyo! 🎨**
 
 
+

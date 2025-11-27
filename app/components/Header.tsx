@@ -40,10 +40,10 @@ export default function Header() {
             transition={{ duration: 0.6 }}
             className="flex items-center space-x-2"
           >
-            <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
               <span className="text-white font-bold text-xl">X</span>
             </div>
-            <span className="text-xl font-bold text-gray-900">Sketcha</span>
+            <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Papelito</span>
           </motion.div>
 
           {/* Desktop Navigation */}
@@ -53,22 +53,24 @@ export default function Header() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="hidden lg:flex items-center space-x-8"
           >
-            <a href="#home" className="text-gray-700 hover:text-orange-500 transition-colors font-medium">
-              Home
+            <a href="/" className="text-gray-700 hover:text-indigo-600 transition-colors font-medium">
+              Inicio
             </a>
-            <a href="#pricing" className="text-gray-700 hover:text-orange-500 transition-colors font-medium">
-              Pricing
+            <a href="/documents" className="text-gray-700 hover:text-indigo-600 transition-colors font-medium">
+              Documentos
             </a>
-            <a href="#contact" className="text-gray-700 hover:text-orange-500 transition-colors font-medium">
-              Contact
+            <a href="#pricing" className="text-gray-700 hover:text-indigo-600 transition-colors font-medium">
+              Precios
+            </a>
+            <a href="#contact" className="text-gray-700 hover:text-indigo-600 transition-colors font-medium">
+              Contacto
             </a>
             <button 
-              onClick={() => window.location.href = '#pricing'}
-              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full font-medium transition-colors"
+              onClick={() => window.location.href = '/documents'}
+              className="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-4 py-2 rounded-full font-medium transition-all shadow-md hover:shadow-lg"
             >
               <User className="w-4 h-4" />
-              Get Started
-              <ChevronDown className="w-4 h-4" />
+              Empezar
             </button>
           </motion.nav>
 
@@ -78,7 +80,7 @@ export default function Header() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
             onClick={() => setIsOpen(!isOpen)}
-            className="lg:hidden p-2 rounded-md text-gray-700 hover:text-orange-500 hover:bg-gray-100 transition-colors"
+            className="lg:hidden p-2 rounded-md text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
           >
             {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </motion.button>
@@ -95,36 +97,42 @@ export default function Header() {
           >
             <div className="px-2 pt-2 pb-3 space-y-1">
               <a
-                href="#home"
-                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-orange-500 hover:bg-gray-50 transition-colors"
+                href="/"
+                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
                 onClick={() => setIsOpen(false)}
               >
-                Home
+                Inicio
+              </a>
+              <a
+                href="/documents"
+                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                Documentos
               </a>
               <a
                 href="#pricing"
-                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-orange-500 hover:bg-gray-50 transition-colors"
+                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
                 onClick={() => setIsOpen(false)}
               >
-                Pricing
+                Precios
               </a>
               <a
                 href="#contact"
-                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-orange-500 hover:bg-gray-50 transition-colors"
+                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
                 onClick={() => setIsOpen(false)}
               >
-                Contact
+                Contacto
               </a>
               <button 
                 onClick={() => {
-                  window.location.href = '#pricing';
+                  window.location.href = '/documents';
                   setIsOpen(false);
                 }}
-                className="w-full mt-4 flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full font-medium transition-colors"
+                className="w-full mt-4 flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-4 py-2 rounded-full font-medium transition-all shadow-md hover:shadow-lg"
               >
                 <User className="w-4 h-4" />
-                Get Started
-                <ChevronDown className="w-4 h-4" />
+                Empezar
               </button>
             </div>
           </motion.div>
