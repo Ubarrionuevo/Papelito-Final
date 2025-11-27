@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DocumentSearchRequest, Document } from '../../../../types/api';
-import { documents } from '../route';
+import { getDocumentsMap } from '../utils';
+
+// Get the documents map
+const documents = getDocumentsMap();
 
 export async function POST(request: NextRequest) {
   try {

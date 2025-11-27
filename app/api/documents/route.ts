@@ -1,14 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Document, DocumentRequest } from '../../../types/api';
+import { getDocumentsMap, generateDocumentId } from './utils';
 
-// In-memory storage for demo purposes
-// In production, you should use a database (PostgreSQL, MongoDB, etc.)
-export const documents = new Map<string, Document>();
-
-// Helper function to generate document ID
-function generateDocumentId(): string {
-  return 'doc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-}
+// Get the documents map
+const documents = getDocumentsMap();
 
 // POST - Guardar documento
 export async function POST(request: NextRequest) {
