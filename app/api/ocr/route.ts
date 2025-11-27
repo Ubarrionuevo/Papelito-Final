@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { OCRRequest, OCRResponse } from '../../../types/api';
 
 // Simulación de OCR - En producción usarías un servicio real como Google Cloud Vision, AWS Textract, Tesseract.js, etc.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function processOCR(_imageBase64: string): Promise<OCRResponse['data']> {
   // TODO: Integrar con servicio OCR real
   // Ejemplos de servicios:
