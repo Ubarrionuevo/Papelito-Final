@@ -28,12 +28,12 @@ export const trackPageView = (page_path: string) => {
 // Specific tracking functions for your app
 export const analytics = {
   // User actions
-  colorizationStarted: () => {
-    trackEvent('colorization_started', 'user_action', 'image_processing');
+  documentProcessingStarted: () => {
+    trackEvent('document_processing_started', 'user_action', 'document_processing');
   },
   
-  colorizationCompleted: () => {
-    trackEvent('colorization_completed', 'user_action', 'image_processing');
+  documentProcessingCompleted: () => {
+    trackEvent('document_processing_completed', 'user_action', 'document_processing');
   },
   
   creditUsed: (remainingCredits: number) => {
@@ -55,7 +55,7 @@ export const analytics = {
   
   // User engagement
   appOpened: () => {
-    trackEvent('app_opened', 'engagement', 'colorization_app');
+    trackEvent('app_opened', 'engagement', 'document_app');
   },
   
   freeTrialUsed: () => {

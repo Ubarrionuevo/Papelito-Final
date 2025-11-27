@@ -194,7 +194,7 @@ export default function DocumentUploadApp() {
     setError(null);
     setProcessingStatus('Procesando documento...');
     
-    analytics.colorizationStarted(); // Reutilizamos el tracking
+    analytics.documentProcessingStarted();
 
     try {
       const userId = generateUserId();
@@ -251,7 +251,7 @@ export default function DocumentUploadApp() {
         
         await deductCredit();
         setProcessingStatus('¡Completado!');
-        analytics.colorizationCompleted();
+        analytics.documentProcessingCompleted();
         
         // Reset file selection
         setSelectedFile(null);
