@@ -86,3 +86,10 @@ export interface ColorizeRequest {
   output_format?: string; // e.g., "jpeg", "png"
 }
 
+export interface ColorizationResult {
+  original: string; // URL or base64 of original image
+  colorized: string; // URL or base64 of colorized image
+  timestamp: Date;
+  prompt: string;
+}
+
