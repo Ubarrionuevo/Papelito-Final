@@ -3,8 +3,9 @@ import { Check, Star, Crown, ArrowRight } from "lucide-react";
 import { analytics } from "../utils/analytics";
 
 const CHECKOUT_LINKS: Record<string, string> = {
-  Starter: "https://sketch1.lemonsqueezy.com/buy/55e5a62d-ee89-492c-a5d4-d325e337ae0f",
-  Professional: "https://sketch1.lemonsqueezy.com/buy/928a9c0e-e29e-45fc-90d5-3c7c50cf4d75",
+  Gratis: "/documents",
+  Mensual: "#pricing", // TODO: Agregar link de checkout
+  Empresa: "#contact",
 };
 
 interface PricingCardProps {
@@ -65,10 +66,12 @@ export default function PricingCard({
       <div className="text-center mb-8">
         <h3 className="text-2xl font-bold text-black mb-2">{title}</h3>
         <div className="flex items-baseline justify-center gap-1 mb-2">
-          <span className="text-4xl font-bold text-black">{price}</span>
-          <span className="text-black">{period}</span>
+          <span className={`text-4xl font-bold ${price === "Gratis" || price === "Personalizado" ? "text-indigo-600" : "text-black"}`}>
+            {price}
+          </span>
+          {period && <span className="text-black">{period}</span>}
         </div>
-        <div className="text-2xl font-semibold text-black mb-4">{credits}</div>
+        <div className="text-xl font-semibold text-gray-700 mb-4">{credits}</div>
         
         {/* Badge */}
         {badge && (
@@ -100,19 +103,29 @@ export default function PricingCard({
       {/* CTA Button */}
       <motion.a
         href={checkoutLink}
-        target="_blank"
-        rel="noopener noreferrer"
+        target={title === "Empresa" ? "_self" : checkoutLink.startsWith("http") ? "_blank" : "_self"}
+        rel={checkoutLink.startsWith("http") ? "noopener noreferrer" : undefined}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         onClick={() => {
           const planType = title.toLowerCase();
-          const priceValue = parseInt(price.replace('$', '')) || 10;
-          analytics.purchaseInitiated(planType, priceValue);
+          if (title === "Empresa") {
+            analytics.pricingViewed("empresa");
+          } else {
+            const priceValue = price === "Gratis" ? 0 : parseInt(price.replace(/[$.]/g, '').replace(/\s/g, '')) || 0;
+            analytics.purchaseInitiated(planType, priceValue);
+          }
         }}
-        className="w-full py-3 rounded-full font-semibold transition-all duration-200 bg-red-500 hover:bg-red-600 text-white shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+        className={`w-full py-3 rounded-full font-semibold transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2 ${
+          title === "Empresa" 
+            ? "bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white"
+            : title === "Gratis"
+            ? "bg-gray-200 hover:bg-gray-300 text-gray-800"
+            : "bg-red-500 hover:bg-red-600 text-white"
+        }`}
       >
         <ArrowRight className="w-5 h-5" />
-        <span>Get Started</span>
+        <span>{title === "Empresa" ? "Contactar" : title === "Gratis" ? "Empezar Gratis" : "Suscribirse"}</span>
       </motion.a>
 
       {/* Decorative elements */}

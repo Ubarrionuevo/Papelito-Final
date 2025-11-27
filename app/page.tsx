@@ -82,39 +82,96 @@ export default function Home() {
               Precios
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Pago único. Obtén 2000 créditos y acceso completo a nuestras herramientas de digitalización profesional.
+              Elige el plan que mejor se adapte a tus necesidades de digitalización de documentos.
             </p>
           </motion.div>
 
-          <div className="flex justify-center max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {/* Plan Gratuito */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="w-full max-w-md"
             >
               <PricingCard
-                title="Profesional"
-                price="$10"
-                period=" pago único"
-                credits="2000 Créditos"
+                title="Gratis"
+                price="Gratis"
+                period=""
+                credits="10 Documentos"
                 features={[
-                  "2000 digitalizaciones",
-                  "Pago único - sin cargos recurrentes",
+                  "10 digitalizaciones gratis",
+                  "OCR básico",
+                  "Clasificación automática",
+                  "Búsqueda por texto",
+                  "Exportación a PDF",
+                  "Soporte por email"
+                ]}
+                popular={false}
+                index={0}
+              />
+            </motion.div>
+
+            {/* Plan Mensual */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+            >
+              <PricingCard
+                title="Mensual"
+                price="$20.000"
+                period=" /mes"
+                credits="Más de 100 Documentos"
+                features={[
+                  "Más de 100 digitalizaciones/mes",
                   "OCR de alta precisión",
-                  "Múltiples formatos de exportación",
-                  "Clasificación automática inteligente",
+                  "Clasificación inteligente avanzada",
                   "Búsqueda avanzada por texto y metadatos",
-                  "Los créditos nunca expiran"
+                  "Múltiples formatos de exportación",
+                  "Soporte prioritario",
+                  "Sin límite de almacenamiento"
                 ]}
                 badge={{
-                  text: "Best value",
+                  text: "Más Popular",
                   color: "bg-orange-50 text-orange-800",
                   icon: <Star className="w-4 h-4" />
                 }}
                 popular={true}
-                index={0}
+                index={1}
+              />
+            </motion.div>
+
+            {/* Plan Empresa */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              <PricingCard
+                title="Empresa"
+                price="Personalizado"
+                period=""
+                credits="Ilimitado"
+                features={[
+                  "Digitalizaciones ilimitadas",
+                  "OCR de máxima precisión",
+                  "API personalizada",
+                  "Integraciones personalizadas",
+                  "Soporte 24/7 dedicado",
+                  "Gestor de cuenta asignado",
+                  "Capacitación del equipo",
+                  "SLA garantizado"
+                ]}
+                badge={{
+                  text: "Empresa",
+                  color: "bg-purple-50 text-purple-800",
+                  icon: <Star className="w-4 h-4" />
+                }}
+                popular={false}
+                index={2}
               />
             </motion.div>
           </div>
