@@ -72,6 +72,21 @@ export default function DocumentUploadApp() {
     return userId;
   };
 
+  const loadDocuments = useCallback(async () => {
+    try {
+      const userId = generateUserId();
+      const response = await fetch(`/api/documents?userId=${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          setDocuments(data.data);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load documents:', error);
+    }
+  }, []);
+
   useEffect(() => {
     loadUserCredits();
     loadDocuments();
@@ -88,21 +103,6 @@ export default function DocumentUploadApp() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, [loadUserCredits, loadDocuments]);
-
-  const loadDocuments = useCallback(async () => {
-    try {
-      const userId = generateUserId();
-      const response = await fetch(`/api/documents?userId=${userId}`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
-          setDocuments(data.data);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load documents:', error);
-    }
-  }, []);
 
   const deductCredit = useCallback(async () => {
     try {
