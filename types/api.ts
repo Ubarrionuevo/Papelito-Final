@@ -82,7 +82,7 @@ export interface DocumentSearchRequest {
 export interface ColorizeRequest {
   prompt: string;
   input_image: string; // base64 encoded image
-  aspect_ratio?: string;
-  output_format?: string;
+  aspect_ratio?: string; // e.g., "1:1", "16:9"
+  output_format?: string; // e.g., "jpeg", "png"
 }
 
